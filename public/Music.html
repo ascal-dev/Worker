@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Music Streaming</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #121212;
+      --panel: #181818;
+      --hover: #242424;
+      --accent: #1db954;
+      --text: #ffffff;
+      --muted: #b3b3b3;
+      --error: #ff4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 160px;
+    }
+
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #000;
+      z-index: 100;
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    nav h1 {
+      margin: 0;
+      color: var(--accent);
+      font-size: 20px;
+    }
+
+    nav button {
+      background: var(--panel);
+      border: none;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    nav button.active,
+    nav button:hover {
+      background: var(--hover);
+    }
+
+    main {
+      padding: 90px 16px 40px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (min-width: 769px) {
+      .grid {
+        grid-template-columns: repeat(6, 1fr);
+      }
+    }
+
+    .card {
+      background: var(--panel);
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .card:hover {
+      background: var(--hover);
+      transform: scale(1.04);
+    }
+
+    .card img {
+      width: 100%;
+      aspect-ratio: 1/1;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+
+    .card h4 {
+      margin: 10px 0 4px;
+      font-size: 14px;
+    }
+
+    .card p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .loading-message,
+    .error-message {
+      text-align: center;
+      padding: 80px 20px;
+      font-size: 18px;
+    }
+
+    .error-message {
+      color: var(--error);
+    }
+
+    .album-hero {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .album-hero img {
+      width: 240px;
+      height: 240px;
+      border-radius: 16px;
+      object-fit: cover;
+    }
+
+    .album-info h1 {
+      font-size: 36px;
+      margin: 0 0 8px;
+    }
+
+    .album-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+
+    .fs-header button {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(8px);
+    }
+
+    .fs-header button:hover {
+      background: rgba(30, 215, 96, 0.18);
+      /* light accent hover */
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(30, 215, 96, 0.25);
+    }
+
+    .fs-header button:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    .album-actions button {
+      background: var(--panel);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .album-actions button:hover {
+      background: var(--hover);
+    }
+
+    .album-songs {
+      background: var(--panel);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-top: 16px;
+    }
+
+    .album-song {
+      display: grid;
+      grid-template-columns: 48px 1fr 60px 60px;
+      align-items: center;
+      padding: 14px 16px;
+      cursor: pointer;
+    }
+
+    .album-song:hover {
+      background: var(--hover);
+    }
+
+    .album-song.playing {
+      color: var(--accent);
+      font-weight: bold;
+      background: rgba(30, 215, 96, 0.15);
+    }
+
+    .player {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #000;
+      border-top: 1px solid #222;
+      display: none;
+      grid-template-columns: 180px 1fr auto;
+      gap: 16px;
+      padding: 12px 16px;
+      z-index: 90;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) {
+      .player {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 10px;
+      }
+    }
+
+    .player-left {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .player-left img {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+
+    .controls {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 6px;
+    }
+
+    .controls button {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .play {
+      background: var(--accent);
+      color: #000;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      font-size: 20px;
+    }
+
+    .progress {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .progress input {
+      flex: 1;
+    }
+
+    .progress span {
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .fullscreen-player {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .fs-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .fs-cover {
+      width: 90%;
+      max-width: 400px;
+      border-radius: 16px;
+      margin: 20px 0;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+    }
+
+    .download {
+      display: flex;
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .download a {
+      background: var(--accent);
+      color: #000;
+      padding: 12px 24px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .queue {
+      width: 100%;
+      max-width: 600px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .queue h4 {
+      margin: 0 0 12px;
+    }
+
+    .queue div {
+      padding: 12px 16px;
+      border-bottom: 1px solid #222;
+      cursor: pointer;
+    }
+
+    .queue div:hover {
+      background: #111;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin: 24px 0;
+      padding: 0 16px;
+    }
+
+    .pagination button {
+      background: var(--panel);
+      color: var(--text);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .pagination button:hover:not(:disabled) {
+      background: var(--hover);
+    }
+
+    .pagination button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    #modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+
+    #modal>div {
+      background: var(--panel);
+      padding: 28px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 460px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav>
+    <h1>🎧 Music</h1>
+    <button class="active" onclick="showAll()">All</button>
+    <button onclick="filterCategory('Bollywood')">Bollywood</button>
+    <button onclick="filterCategory('Punjabi')">Punjabi</button>
+    <button onclick="filterCategory('Haryanvi')">Haryanvi</button>
+    <button onclick="filterCategory('Bhojpuri')">Bhojpuri</button>
+    <button onclick="showAlbums()">Albums</button>
+    <button onclick="createPlaylist()">Create Playlist</button>
+    <button onclick="showPlaylists()">Playlists</button>
+  </nav>
+
+  <main id="content">
+    <div class="loading-message">Loading music library…</div>
+  </main>
+
+  <div class="pagination" id="pagination"></div>
+
+  <!-- MINI PLAYER -->
+  <div class="player" id="player">
+    <div class="player-left">
+      <img id="pCover" alt="">
+      <div>
+        <h4 id="pTitle"></h4>
+        <p id="pMeta"></p>
+      </div>
+    </div>
+    <div class="player-center">
+      <div class="controls">
+        <button onclick="prevSong()">⏮</button>
+        <button class="play" onclick="togglePlay()">▶</button>
+        <button onclick="nextSong()">⏭</button>
+      </div>
+      <div class="progress">
+        <span id="cur">0:00</span>
+        <input type="range" id="seek" min="0" max="100" value="0">
+        <span id="dur">0:00</span>
+      </div>
+    </div>
+    <div class="player-right">
+      <input type="range" min="0" max="1" step="0.01" value="1" onchange="audio.volume = this.value">
+    </div>
+  </div>
+
+  <audio id="audio"></audio>
+
+  <!-- FULLSCREEN PLAYER -->
+  <div class="fullscreen-player" id="fsPlayer">
+    <div class="fs-header">
+      <button onclick="closeFullscreen()">⬅ Back</button>
+      <span>Now Playing</span>
+      <button onclick="toggleQueue()">☰ Queue</button>
+    </div>
+    <img id="fsCover" class="fs-cover" alt="">
+    <h2 id="fsTitle"></h2>
+    <p id="fsMeta"></p>
+    <div class="progress" style="width:90%; max-width:600px; margin:20px 0;">
+      <span id="fsCur">0:00</span>
+      <input type="range" id="fsSeek" min="0" max="100" value="0">
+      <span id="fsDur">0:00</span>
+    </div>
+    <div class="controls">
+      <button onclick="prevSong()">⏮</button>
+      <button class="play" onclick="togglePlay()">▶</button>
+      <button onclick="nextSong()">⏭</button>
+    </div>
+    <div class="download">
+      <a id="dl128" download>⬇ 128kbps</a>
+      <a id="dl320" download>⬇ 320kbps</a>
+    </div>
+    <div class="queue" id="queue"></div>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modal">
+    <div>
+      <h3 id="modalTitle"></h3>
+      <div id="modalContent"></div>
+      <button onclick="closeModal()"
+        style="margin-top:20px; padding:10px 20px; background:var(--accent); color:#000; border:none; border-radius:50px; font-weight:bold; cursor:pointer;">Close</button>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://ojcqoqegblymhmmimvqe.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qY3FvcWVnYmx5bWhtbWltdnFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzNDQ0MjMsImV4cCI6MjA4NDkyMDQyM30.oXAZvL9-oed20RnWqOPRHUcm63Qc1EgiQ2SMerlZlNU";
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const PER_PAGE = 30;
+    let currentView = 'all';
+    let currentCategoryId = null;
+    let songs = [];                    // currently loaded songs (paginated)
+    let totalCount = 0;
+    let loadedPages = 0;
+    let playlist = [];
+    let currentIndex = -1;
+    let albumMode = false;
+    let categories = [];
+    let allSongsForAlbums = [];        // full list used only for album grouping
+
+    const audio = document.getElementById("audio");
+    let userPlaylists = JSON.parse(localStorage.getItem("playlists") || "{}");
+
+    function savePlaylists() {
+      localStorage.setItem("playlists", JSON.stringify(userPlaylists));
+    }
+
+    async function fetchSongs(page = 1, categoryId = null) {
+      const from = (page - 1) * PER_PAGE;
+      const to = from + PER_PAGE - 1;
+
+      let query = db.from("songs").select("*", { count: page === 1 ? "exact" : null });
+
+      if (categoryId !== null) {
+        query = query.eq("category_id", categoryId);
+      }
+
+      const { data, error, count } = await query.range(from, to);
+
+      if (error) {
+        console.error("Fetch error:", error);
+        return { data: [], count: 0 };
+      }
+
+      return { data: data || [], count: count ?? totalCount };
+    }
+
+    async function loadPage(page) {
+      const { data, count } = await fetchSongs(page, currentCategoryId);
+
+      if (page === 1) {
+        songs = data;
+        totalCount = count;
+      } else {
+        songs = songs.concat(data);
+      }
+
+      loadedPages = page;
+      renderSongs();
+    }
+
+    function renderSongs() {
+      if (albumMode) return;
+
+      const content = document.getElementById("content");
+      let html = '<div class="grid">';
+
+      songs.forEach((s, i) => {
+        html += `
+      <div class="card" onclick="playFromList(${i})">
+        <img src="${s.cover_image || 'https://via.placeholder.com/300?text=No+Cover'}" alt="">
+        <h4>${s.song_name || 'Unknown'}</h4>
+        <p>${s.movie_name || '?'} • ${s.singers || ''}</p>
+      </div>`;
+      });
+
+      html += '</div>';
+      content.innerHTML = songs.length ? html : '<div class="loading-message">No songs found</div>';
+
+      renderPagination();
+    }
+
+    function renderPagination() {
+      const p = document.getElementById("pagination");
+      const pages = Math.ceil(totalCount / PER_PAGE);
+      if (pages <= 1) {
+        p.innerHTML = "";
+        return;
+      }
+      p.innerHTML = `
+    <button onclick="prevPage()" ${loadedPages <= 1 ? 'disabled' : ''}>Prev</button>
+    <span>Page ${loadedPages} of ${pages}</span>
+    <button onclick="nextPage()" ${songs.length >= totalCount ? 'disabled' : ''}>Next</button>
+  `;
+    }
+
+    async function nextPage() {
+      if (songs.length >= totalCount) return;
+      await loadPage(loadedPages + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function prevPage() {
+      if (loadedPages <= 1) return;
+      loadedPages--;
+      songs = songs.slice(0, loadedPages * PER_PAGE);
+      renderSongs();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function showAll() {
+      albumMode = false;
+      currentView = 'all';
+      currentCategoryId = null;
+      loadedPages = 0;
+      songs = [];
+      totalCount = 0;
+      updateActiveButton(2);
+      document.getElementById("content").innerHTML = '<div class="loading-message">Loading songs...</div>';
+      await loadPage(1);
+    }
+
+    async function filterCategory(name) {
+      albumMode = false;
+      currentView = 'category';
+      const cat = categories.find(c => c.name?.toLowerCase().includes(name.toLowerCase()));
+      if (!cat) {
+        document.getElementById("content").innerHTML = `<div class="error-message">Category not found</div>`;
+        return;
+      }
+      currentCategoryId = cat.id;
+      loadedPages = 0;
+      songs = [];
+      totalCount = 0;
+      updateActiveButton(event.target);
+      document.getElementById("content").innerHTML = '<div class="loading-message">Loading songs...</div>';
+      await loadPage(1);
+    }
+
+    function updateActiveButton(target) {
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      if (target instanceof Element) {
+        target.classList.add('active');
+      } else if (typeof target === 'number') {
+        const btn = document.querySelector(`nav button:nth-child(${target})`);
+        if (btn) btn.classList.add('active');
+      }
+    }
+
+    function showAlbums() {
+      albumMode = true;
+      updateActiveButton(7);
+      const content = document.getElementById("content");
+      content.innerHTML = '<div class="grid"></div>';
+      const grid = content.querySelector(".grid");
+      const albums = {};
+      allSongsForAlbums.forEach(s => {
+        const key = s.movie_name || "Unknown Album";
+        if (!albums[key]) albums[key] = [];
+        albums[key].push(s);
+      });
+      Object.entries(albums).forEach(([name, tracks]) => {
+        const first = tracks[0];
+        grid.innerHTML += `
+      <div class="card" onclick="openAlbum('${name.replace(/'/g, "\\'")}')">
+        <img src="${first.cover_image || 'https://via.placeholder.com/300?text=Album'}" alt="">
+        <h4>${name}</h4>
+        <p>${tracks.length} songs</p>
+      </div>`;
+      });
+      document.getElementById("pagination").innerHTML = "";
+    }
+
+    function openAlbum(movieName) {
+      albumMode = true;
+      playlist = allSongsForAlbums.filter(s => (s.movie_name || "Unknown Album") === movieName);
+      if (!playlist.length) return alert("No songs in this album");
+
+      const first = playlist[0];
+      document.getElementById("content").innerHTML = `
+    <div class="album-hero">
+      <img src="${first.cover_image || ''}" alt="">
+      <div class="album-info">
+        <h1>${movieName}</h1>
+        <p>${first.singers || "Various Artists"}</p>
+        <div class="album-actions">
+          <button onclick="playAlbum(0)">Play All</button>
+          <button onclick="addAlbumToPlaylist()">Add to Playlist</button>
+          <button onclick="downloadAlbum()">Download All</button>
+        </div>
+      </div>
+    </div>
+    <div class="album-songs">
+      ${playlist.map((s, i) => `
+        <div class="album-song ${i === currentIndex ? 'playing' : ''}" onclick="playAlbum(${i})">
+          <span>${i + 1}</span>
+          <div>
+            <b>${s.song_name}</b>
+            <small>${s.singers || ""}</small>
+          </div>
+          <button onclick="event.stopPropagation(); downloadSong(${i})">⬇</button>
+          <button onclick="event.stopPropagation(); addToPlaylist(${i})">+</button>
+        </div>
+      `).join('')}
+    </div>`;
+      document.getElementById("pagination").innerHTML = "";
+    }
+
+    function playAlbum(start = 0) {
+      currentIndex = start;
+      playIndex(start);
+    }
+
+    function showPlaylists() {
+      albumMode = false;
+      updateActiveButton(9);
+      const names = Object.keys(userPlaylists);
+      let html = '<h2 style="margin:20px 0;">Your Playlists</h2>';
+      if (!names.length) {
+        html += '<div class="loading-message">No playlists yet</div>';
+      } else {
+        html += '<div class="grid">';
+        names.forEach(name => {
+          const len = userPlaylists[name].length;
+          html += `
+        <div class="card" onclick="openPlaylist('${name.replace(/'/g, "\\'")}')">
+          <img src="https://via.placeholder.com/300?text=Playlist" alt="">
+          <h4>${name}</h4>
+          <p>${len} song${len !== 1 ? 's' : ''}</p>
+        </div>`;
+        });
+        html += '</div>';
+      }
+      document.getElementById("content").innerHTML = html;
+      document.getElementById("pagination").innerHTML = "";
+    }
+
+    function openPlaylist(name) {
+      albumMode = true;
+      playlist = userPlaylists[name] || [];
+      if (!playlist.length) return alert("Playlist is empty");
+
+      document.getElementById("content").innerHTML = `
+    <div class="album-hero">
+      <img src="https://via.placeholder.com/300?text=Playlist" alt="">
+      <div class="album-info">
+        <h1>${name}</h1>
+        <p>${playlist.length} songs</p>
+        <div class="album-actions">
+          <button onclick="playAlbum(0)">Play All</button>
+          <button onclick="downloadAlbum()">Download All</button>
+        </div>
+      </div>
+    </div>
+    <div class="album-songs">
+      ${playlist.map((s, i) => `
+        <div class="album-song" onclick="playAlbum(${i})">
+          <span>${i + 1}</span>
+          <div>
+            <b>${s.song_name}</b>
+            <small>${s.singers || ""}</small>
+          </div>
+          <button onclick="event.stopPropagation(); downloadSong(${i})">⬇</button>
+        </div>
+      `).join('')}
+    </div>`;
+      document.getElementById("pagination").innerHTML = "";
+    }
+
+    function createPlaylist() {
+      showModal("Create Playlist", `
+    <input id="plName" placeholder="Playlist name" style="width:100%; padding:12px; margin:12px 0; background:#222; color:white; border:none; border-radius:6px;">
+    <button onclick="doCreatePlaylist()" style="padding:10px 20px; background:var(--accent); color:black; border:none; border-radius:50px; font-weight:bold;">Create</button>
+  `);
+    }
+
+    function doCreatePlaylist() {
+      const name = document.getElementById("plName")?.value?.trim();
+      if (!name) return alert("Name required");
+      if (userPlaylists[name]) return alert("Already exists");
+      userPlaylists[name] = [];
+      savePlaylists();
+      closeModal();
+      showPlaylists();
+    }
+
+    function addToPlaylist(idx) {
+      const song = playlist[idx];
+      if (!song) return;
+      const names = Object.keys(userPlaylists);
+      if (!names.length) return showModal("No playlists", "Create one first");
+
+      let html = names.map(n => `
+    <div onclick="doAddToPlaylist('${n.replace(/'/g, "\\'")}', ${idx})" style="padding:12px; cursor:pointer; border-bottom:1px solid #333;">
+      Add to <b>${n}</b>
+    </div>
+  `).join('');
+      showModal("Add to Playlist", html);
+    }
+
+    function doAddToPlaylist(name, idx) {
+      userPlaylists[name].push(playlist[idx]);
+      savePlaylists();
+      closeModal();
+    }
+
+    function addAlbumToPlaylist() {
+      const names = Object.keys(userPlaylists);
+      if (!names.length) return showModal("No playlists", "Create one first");
+
+      let html = names.map(n => `
+    <div onclick="doAddAlbumToPlaylist('${n.replace(/'/g, "\\'")}')" style="padding:12px; cursor:pointer; border-bottom:1px solid #333;">
+      Add album to <b>${n}</b>
+    </div>
+  `).join('');
+      showModal("Add Album to Playlist", html);
+    }
+
+    function doAddAlbumToPlaylist(name) {
+      userPlaylists[name].push(...playlist);
+      savePlaylists();
+      closeModal();
+    }
+
+    function playFromList(idx) {
+      playlist = buildRecommendations(songs[idx]);
+      playIndex(0);
+    }
+
+    function buildRecommendations(seed) {
+      return [...allSongsForAlbums].map(s => {
+        let score = 0;
+        if (s.singers === seed.singers) score += 5;
+        if (s.movie_name === seed.movie_name) score += 4;
+        if (s.category_id === seed.category_id) score += 2;
+        return { ...s, score };
+      }).sort((a, b) => b.score - a.score);
+    }
+
+    function playIndex(i) {
+      if (i < 0 || i >= playlist.length) return;
+      currentIndex = i;
+      const s = playlist[i];
+      audio.src = s.stream_url;
+      audio.play().catch(e => console.warn("Play blocked:", e));
+
+      document.getElementById("pCover").src = s.cover_image || "";
+      document.getElementById("pTitle").textContent = s.song_name || "Unknown";
+      document.getElementById("pMeta").textContent = `${s.movie_name || ""} • ${s.singers || ""}`;
+      document.getElementById("player").style.display = "grid";
+
+      document.getElementById("fsCover").src = s.cover_image || "";
+      document.getElementById("fsTitle").textContent = s.song_name || "Unknown";
+      document.getElementById("fsMeta").textContent = `${s.movie_name || ""} • ${s.singers || ""}`;
+      document.getElementById("dl128").href = s.download_128 || s.stream_url || "#";
+      document.getElementById("dl320").href = s.download_320 || s.stream_url || "#";
+
+      document.querySelectorAll(".play").forEach(b => b.textContent = "⏸");
+      document.querySelectorAll(".album-song").forEach(el => el.classList.remove("playing"));
+      document.querySelectorAll(`.album-song[onclick*="(${i})"]`).forEach(el => el.classList.add("playing"));
+
+      renderQueue();
+    }
+
+    function togglePlay() {
+      if (audio.paused) {
+        audio.play();
+        document.querySelectorAll(".play").forEach(b => b.textContent = "⏸");
+      } else {
+        audio.pause();
+        document.querySelectorAll(".play").forEach(b => b.textContent = "▶");
+      }
+    }
+
+    function nextSong() {
+      currentIndex = (currentIndex + 1) % playlist.length;
+      playIndex(currentIndex);
+    }
+
+    function prevSong() {
+      currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+      playIndex(currentIndex);
+    }
+
+    function renderQueue() {
+      const q = document.getElementById("queue");
+      q.innerHTML = "<h4>Up Next</h4>";
+      playlist.forEach((s, i) => {
+        q.innerHTML += `
+      <div onclick="playIndex(${i})" ${i === currentIndex ? 'style="color:var(--accent);font-weight:bold;"' : ''}>
+        ${i === currentIndex ? '▶ ' : ''}${s.song_name} – ${s.movie_name || ""}
+      </div>`;
+      });
+    }
+
+    function toggleQueue() {
+      const q = document.getElementById("queue");
+      q.style.display = q.style.display === "block" ? "none" : "block";
+      if (q.style.display === "block") renderQueue();
+    }
+
+    function closeFullscreen() {
+      document.getElementById("fsPlayer").style.display = "none";
+    }
+
+    document.getElementById("player").onclick = (e) => {
+      if (e.target.closest("button, input")) return;
+      document.getElementById("fsPlayer").style.display = "flex";
+      renderQueue();
+    };
+
+    audio.ontimeupdate = () => {
+      if (!audio.duration) return;
+      const pct = (audio.currentTime / audio.duration) * 100;
+      document.getElementById("seek").value = pct;
+      document.getElementById("fsSeek").value = pct;
+      document.getElementById("cur").textContent = formatTime(audio.currentTime);
+      document.getElementById("dur").textContent = formatTime(audio.duration);
+      document.getElementById("fsCur").textContent = formatTime(audio.currentTime);
+      document.getElementById("fsDur").textContent = formatTime(audio.duration);
+    };
+
+    document.getElementById("seek").oninput = () => {
+      audio.currentTime = (document.getElementById("seek").value / 100) * audio.duration;
+    };
+
+    document.getElementById("fsSeek").oninput = () => {
+      audio.currentTime = (document.getElementById("fsSeek").value / 100) * audio.duration;
+    };
+
+    function formatTime(t) {
+      if (!t) return "0:00";
+      const m = Math.floor(t / 60);
+      const s = Math.floor(t % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function downloadSong(i) {
+      const s = playlist[i];
+      const url = s.download_320 || s.download_128 || s.stream_url;
+      if (!url) return alert("No download link");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${s.song_name || "track"}.mp3`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    async function downloadAlbum() {
+      for (const s of playlist) {
+        const url = s.download_320 || s.download_128 || s.stream_url;
+        if (!url) continue;
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${s.song_name || "track"}.mp3`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        await new Promise(r => setTimeout(r, 800));
+      }
+    }
+
+    function showModal(title, content) {
+      document.getElementById("modalTitle").textContent = title;
+      document.getElementById("modalContent").innerHTML = content;
+      document.getElementById("modal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("modal").style.display = "none";
+    }
+
+    audio.addEventListener("ended", nextSong);
+
+    async function init() {
+      try {
+        const { data: c, error: e1 } = await db.from("categories").select("*");
+        if (e1) throw e1;
+        categories = c || [];
+
+        const { data: all, error: e2 } = await db.from("songs").select("*");
+        if (e2) throw e2;
+        allSongsForAlbums = all || [];
+
+        await showAll();
+      } catch (err) {
+        console.error(err);
+        document.getElementById("content").innerHTML = `<div class="error-message">Load failed: ${err.message}</div>`;
+      }
+    }
+
+    init();
+  </script>
+</body>
+
+</html>

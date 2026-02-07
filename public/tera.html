@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terabox Videos</title>
+    <style>
+        :root {
+            --primary: #bb86fc;
+            --background: #121212;
+            --surface: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+        }
+
+        /* ===== BASE ===== */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* ===== HEADER LINKS ===== */
+        .external-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .link-btn {
+            background-color: var(--surface);
+            color: var(--primary);
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            border: 1px solid var(--primary);
+            font-weight: bold;
+            transition: all 0.25s ease;
+        }
+
+        .link-btn:hover {
+            background-color: var(--primary);
+            color: var(--background);
+            box-shadow: 0 0 12px rgba(187, 134, 252, 0.35);
+        }
+
+        /* ===== GRID LAYOUT ===== */
+        .video-grid {
+            display: grid;
+            gap: 16px;
+            max-width: 1200px;
+            margin: 0 auto;
+
+            /* ≥1200px → 6 columns */
+            grid-template-columns: repeat(6, 1fr);
+        }
+
+        /* ≤1200px → 5 columns */
+        @media (max-width: 1200px) {
+            .video-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+
+        /* ≤800px → 4 columns */
+        @media (max-width: 800px) {
+            .video-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* ≤500px → 3 columns */
+        @media (max-width: 500px) {
+            .video-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* ===== CARD ===== */
+        .card {
+            background-color: var(--surface);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+        }
+
+        /* ===== IMAGE ===== */
+        .card-image-container {
+            height: 170px;
+            /* fixed height = aligned cards */
+            background-color: #000;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* ===== CONTENT ===== */
+        .card-content {
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        /* Clamp title to 2 lines */
+        .card-title {
+            font-size: 0.85rem;
+            line-height: 1.3;
+            margin: 0 0 8px 0;
+            color: var(--text-primary);
+
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* ===== BUTTON ===== */
+        .copy-btn,
+        .open-btn {
+            margin-top: auto;
+            /* push to bottom */
+            background-color: var(--primary);
+            color: var(--background);
+            border: none;
+            padding: 9px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.15s ease, filter 0.15s ease;
+        }
+
+        .copy-btn:hover,
+        .open-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .copy-btn:active,
+        .open-btn:active {
+            transform: scale(0.97);
+        }
+
+        .copy-btn.copied {
+            background-color: #03dac6;
+        }
+
+        /* ===== PAGINATION ===== */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .page-btn {
+            background-color: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid #333;
+            padding: 10px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== LOADING ===== */
+        .loading {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="external-links">
+        <a href="https://1024teradownloader.com/" target="_blank" class="link-btn">1024 TeraDownloader</a>
+        <a href="https://iteraplay.com/" target="_blank" class="link-btn">iTeraPlay</a>
+        <a href="https://teradownloader.com/" target="_blank" class="link-btn">TeraDownloader</a>
+    </div>
+
+    <div class="video-grid" id="grid">
+        <!-- Items will be injected here -->
+    </div>
+
+    <div class="pagination">
+        <button id="prevBtn" class="page-btn" onclick="changePage(-1)" disabled>Previous</button>
+        <span id="pageIndicator" style="align-self: center;">Page 1</span>
+        <button id="nextBtn" class="page-btn" onclick="changePage(1)">Next</button>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let perPage = calculatePerPage();
+        function calculatePerPage() {
+            const width = window.innerWidth;
+
+            let columns = 6; // default ≥1200px
+
+            if (width <= 500) {
+                columns = 3;
+            } else if (width <= 800) {
+                columns = 4;
+            } else if (width <= 1200) {
+                columns = 5;
+            }
+
+            return columns * 5; // ✅ 5 rows always
+        }
+
+        const grid = document.getElementById('grid');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const pageIndicator = document.getElementById('pageIndicator');
+
+        async function fetchPosts(page) {
+            perPage = calculatePerPage(); // recalc every time
+
+            grid.innerHTML = '<div class="loading">Loading...</div>';
+
+            const res = await fetch(
+                `https://13xwatch-video-terabox.lol/wp-json/wp/v2/posts?per_page=${perPage}&page=${page}&_fields=title,content`
+            );
+
+            const posts = await res.json();
+            renderPosts(posts);
+        }
+
+
+        function extractData(post) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = post.content.rendered;
+
+            // 1. Extract Image
+            // Try to find an img tag
+            let imgUrl = 'https://via.placeholder.com/300x450?text=No+Image'; // Fallback
+            const img = tempDiv.querySelector('img');
+            if (img) {
+                imgUrl = img.src || img.getAttribute('data-src');
+            } else {
+                // Fallback: Check if there is a background image style or parsing specific WP classes
+                // The prompt mentioned: src=\"https://13xwatch-video-terabox.lol/wp-content/uploads/2026/01/IMG-20260108-WA0005-930x1024.jpg\"
+                // We'll trust the DOM parser.
+            }
+
+            // 2. Extract Terabox URL
+            // Search for links containing terabox keywords
+            let teraboxUrl = '';
+            const links = tempDiv.querySelectorAll('a');
+            for (const link of links) {
+                const href = link.href;
+                // Keywords typically found in terabox urls
+                if (href.includes('terabox') || href.includes('1024tera') || href.includes('nephobox') || href.includes('/s/')) {
+                    teraboxUrl = href;
+                    break;
+                }
+            }
+
+            // If no explicit link found, regex the content for raw text links if any (less likely in WP rendered content but possible)
+            if (!teraboxUrl) {
+                const text = tempDiv.innerHTML;
+                const match = text.match(/https?:\/\/(www\.)?(terabox|1024tera|nephobox)\.com\/s\/[a-zA-Z0-9_-]+/);
+                if (match) teraboxUrl = match[0];
+            }
+
+            // Clean title
+            const title = new DOMParser().parseFromString(post.title.rendered, "text/html").body.textContent;
+
+            return { title, imgUrl, teraboxUrl };
+        }
+
+        function shareToBypass(url) {
+            if (!url) return;
+
+            console.log("Redirecting with URL:", url); // debug
+
+            localStorage.setItem("sharedTeraboxUrl", url);
+
+            window.location.href = "https://tv-4vo.pages.dev/bypasstera.html";
+        }
+
+
+        function renderPosts(posts) {
+            grid.innerHTML = "";
+
+            posts.forEach(post => {
+                const { title, imgUrl, teraboxUrl } = extractData(post);
+
+                const card = document.createElement("div");
+                card.className = "card";
+
+                const btn = document.createElement("button");
+                btn.className = "open-btn";
+                btn.textContent = "▶ Open";
+
+                if (!teraboxUrl) {
+                    btn.disabled = true;
+                } else {
+                    btn.dataset.url = teraboxUrl;
+
+                    btn.addEventListener("click", () => {
+                        shareToBypass(btn.dataset.url);
+                    });
+                }
+
+                card.innerHTML = `
+            <div class="card-image-container">
+                <img src="${imgUrl}" class="card-img">
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">${title}</h3>
+            </div>
+        `;
+
+                card.querySelector(".card-content").appendChild(btn);
+                grid.appendChild(card);
+            });
+        }
+
+
+        async function copyLink(btn, url) {
+            try {
+                await navigator.clipboard.writeText(url);
+
+                // Visual feedback
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<span class="icon">✅</span> Copied!';
+                btn.classList.add('copied');
+
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+
+                // Input fallback for older browsers or non-secure contexts
+                const textArea = document.createElement("textarea");
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    btn.innerHTML = '<span class="icon">✅</span> Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.innerHTML = '<span class="icon">📋</span> Copy Link';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                } catch (e) {
+                    alert('Failed to copy link. Manual copy: ' + url);
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage < 1) return;
+
+            currentPage = newPage;
+            fetchPosts(currentPage);
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        /* 5️⃣ RESIZE LISTENER — ADD HERE */
+        window.addEventListener("resize", () => {
+            const newPerPage = calculatePerPage();
+
+            if (newPerPage !== perPage) {
+                perPage = newPerPage;
+                currentPage = 1;
+                fetchPosts(currentPage);
+            }
+        });
+
+
+        // Initial Load
+        fetchPosts(currentPage);
+
+    </script>
+</body>
+
+</html>

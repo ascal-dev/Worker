@@ -1,0 +1,21 @@
+{
+  "name": "nova-tv",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npx wrangler pages dev public",
+    "deploy": "npx wrangler pages deploy public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.91.0",
+    "axios": "^1.13.2",
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "node-fetch": "^2.7.0",
+    "path": "^0.12.7",
+    "playwright": "^1.57.0"
+  }
+}

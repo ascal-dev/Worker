@@ -1,0 +1,11 @@
+#EXTM3U
+#EXTINF:-1 group-title="xHamster",xHamster Home
+https://xhamster.desi/
+#EXTINF:-1 group-title="xHamster",Categories
+https://xhamster.desi/categories
+#EXTINF:-1 group-title="xHamster",New Videos
+https://xhamster.desi/new
+#EXTINF:-1 group-title="xHamster",Best Videos
+https://xhamster.desi/best
+#EXTINF:-1 group-title="xHamster",Pornstars
+https://xhamster.desi/pornstars

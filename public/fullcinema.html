@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Cinema</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcf7f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255, 107, 107, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            font-size: 1.5em;
+            margin: 50px 0;
+            color: #ff6b6b;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(255, 107, 107, 0.3);
+            border-color: rgba(255, 107, 107, 0.5);
+        }
+
+        .card img {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover img {
+            transform: scale(1.05);
+        }
+
+        .card-title {
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: 600;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 107, 107, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .card:hover .play-icon {
+            opacity: 1;
+        }
+
+        .play-icon::after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-left: 25px solid white;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            margin-left: 5px;
+        }
+
+        .card-wrapper {
+            position: relative;
+        }
+
+        /* Video Player Modal */
+        .video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-modal.active {
+            display: flex;
+        }
+
+        .video-container {
+            width: 90%;
+            max-width: 1200px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 107, 107, 0.9);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: #ff4757;
+            transform: scale(1.1);
+        }
+
+        video {
+            width: 100%;
+            max-height: 80vh;
+            display: block;
+        }
+
+        .video-title {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            font-size: 1.3em;
+            text-align: center;
+        }
+
+        .error {
+            color: #ff6b6b;
+            text-align: center;
+            padding: 20px;
+            font-size: 1.2em;
+        }
+
+        .video-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 1.2em;
+            display: none;
+        }
+
+        .video-loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #ff6b6b;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 15px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .card img {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Full Cinema</h1>
+        <div class="loading" id="loading">Loading videos...</div>
+        <div class="grid" id="videoGrid"></div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div class="video-modal" id="videoModal">
+        <button class="close-btn" onclick="closeVideo()">×</button>
+        <div class="video-container">
+            <div class="video-title" id="videoTitle"></div>
+            <div class="video-loading" id="videoLoading">
+                <div class="spinner"></div>
+                <div>Extracting video URL...</div>
+            </div>
+            <video id="videoPlayer" controls autoplay>
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
+    <script>
+        const API_URLS = [
+            'https://fullxcinema.com/wp-json/wp/v2/posts?tags=1674&per_page=100&page=1',
+            'https://fullxcinema.com/wp-json/wp/v2/posts?tags=1674&per_page=100&page=2'
+        ];
+
+        let allVideos = [];
+
+        // Fetch all videos from both pages
+        async function fetchVideos() {
+            try {
+                const responses = await Promise.all(
+                    API_URLS.map(url => fetch(url))
+                );
+                
+                const dataArrays = await Promise.all(
+                    responses.map(res => res.json())
+                );
+
+                // Combine all videos
+                allVideos = dataArrays.flat();
+                
+                displayVideos();
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                console.error('Error fetching videos:', error);
+                document.getElementById('loading').innerHTML = 
+                    '<div class="error">Failed to load videos. Please try again later.</div>';
+            }
+        }
+
+        // Display videos in grid
+        function displayVideos() {
+            const grid = document.getElementById('videoGrid');
+            grid.innerHTML = '';
+
+            allVideos.forEach(video => {
+                const card = createVideoCard(video);
+                grid.appendChild(card);
+            });
+        }
+
+        // Create video card element
+        function createVideoCard(video) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            // Get image URL from og_image or fallback
+            const imageUrl = video.yoast_head_json?.og_image?.[0]?.url || 
+                           video._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
+                           'https://via.placeholder.com/250x350?text=No+Image';
+
+            card.innerHTML = `
+                <div class="card-wrapper">
+                    <img src="${imageUrl}" alt="${video.title.rendered}" onerror="this.src='https://via.placeholder.com/250x350?text=No+Image'">
+                    <div class="play-icon"></div>
+                </div>
+                <div class="card-title">${video.title.rendered}</div>
+            `;
+
+            card.onclick = () => playVideo(video);
+            
+            return card;
+        }
+
+        // Extract video URL from post page
+        async function extractVideoUrl(postUrl) {
+            try {
+                // Use CORS proxy to fetch the page
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(postUrl)}`;
+                const response = await fetch(proxyUrl);
+                const html = await response.text();
+                
+                // Parse HTML to find meta tag with contentURL
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Try to find the meta tag with itemprop="contentURL"
+                const metaTag = doc.querySelector('meta[itemprop="contentURL"]');
+                if (metaTag) {
+                    return metaTag.getAttribute('content');
+                }
+                
+                // Fallback: try to find video tag
+                const videoTag = doc.querySelector('video source');
+                if (videoTag) {
+                    return videoTag.getAttribute('src');
+                }
+
+                // Another fallback: look in the HTML content for video URLs
+                const match = html.match(/https?:\/\/[^\s"']+\.mp4/i);
+                if (match) {
+                    return match[0];
+                }
+
+                throw new Error('Video URL not found');
+            } catch (error) {
+                console.error('Error extracting video URL:', error);
+                throw error;
+            }
+        }
+
+        // Play video
+        async function playVideo(video) {
+            const modal = document.getElementById('videoModal');
+            const player = document.getElementById('videoPlayer');
+            const titleEl = document.getElementById('videoTitle');
+            const loadingEl = document.getElementById('videoLoading');
+
+            // Show modal with loading state
+            modal.classList.add('active');
+            titleEl.textContent = video.title.rendered;
+            player.src = '';
+            player.style.display = 'none';
+            loadingEl.classList.add('active');
+            
+            try {
+                // Extract video URL from the post page
+                const videoUrl = await extractVideoUrl(video.link);
+                
+                if (!videoUrl) {
+                    throw new Error('Could not find video URL');
+                }
+
+                // Hide loading, show player
+                loadingEl.classList.remove('active');
+                player.style.display = 'block';
+
+                // Set video source and play
+                player.src = videoUrl;
+                player.load();
+                player.play().catch(err => {
+                    console.error('Playback error:', err);
+                    alert('Unable to play video. Please try another one.');
+                });
+            } catch (error) {
+                console.error('Error loading video:', error);
+                alert('Failed to load video. Please try another one.');
+                closeVideo();
+            }
+        }
+
+        // Close video player
+        function closeVideo() {
+            const modal = document.getElementById('videoModal');
+            const player = document.getElementById('videoPlayer');
+            const loadingEl = document.getElementById('videoLoading');
+            
+            player.pause();
+            player.src = '';
+            player.style.display = 'block';
+            loadingEl.classList.remove('active');
+            modal.classList.remove('active');
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeVideo();
+            }
+        });
+
+        // Initialize
+        fetchVideos();
+    </script>
+</body>
+</html>

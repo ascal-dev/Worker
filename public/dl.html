@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Secure Download</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --panel: rgba(18, 18, 26, 0.95);
+            --text: #e5e7eb;
+            --muted: #6b7280;
+            --accent: #8b5cf6;
+            --accent-2: #06b6d4;
+            --danger: #ef4444;
+            --gradient: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .cover-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            background: #1a1a24;
+            display: none;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+
+        .meta {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            background: var(--gradient);
+            color: white;
+            box-shadow: 0 0 40px rgba(139, 92, 246, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 60px rgba(139, 92, 246, 0.5);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .btn:hover::after {
+            left: 100%;
+        }
+
+        .error-msg {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+            padding: 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            display: none;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .secure-badge {
+            margin-top: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: #10b981;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loading">
+            <div class="loader"></div>
+            <p style="margin-top: 15px; color: var(--muted); font-size: 0.9rem;">Verifying secure link...</p>
+        </div>
+
+        <div id="content" class="card">
+            <img id="item-image" class="cover-img">
+            <h1 id="item-title" class="title"></h1>
+            <p id="item-date" class="meta"></p>
+            
+            <a id="download-btn" href="#" class="btn">
+                Download Now
+            </a>
+
+            <div class="secure-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                End-to-End Encrypted
+            </div>
+        </div>
+
+        <div id="error" class="card" style="display: none;">
+            <div class="error-msg">
+                <strong>Invalid Link</strong><br>
+                This download link is broken or has expired.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Must match the key in addlink.html
+        const ENCRYPTION_KEY = 'L1nkCrypt_S3cur3_K3y_2024';
+
+        window.addEventListener('load', () => {
+            const hash = window.location.hash.substring(1);
+            
+            if (!hash) {
+                showError();
+                return;
+            }
+
+            // Simulate verifying delay for effect
+            setTimeout(() => {
+                try {
+                    const data = decryptData(hash);
+                    if (data) {
+                        const linkData = JSON.parse(data);
+                        renderContent(linkData);
+                    } else {
+                        showError();
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showError();
+                }
+            }, 800);
+        });
+
+        function renderContent(data) {
+            document.getElementById('loading').style.display = 'none';
+            const card = document.getElementById('content');
+            
+            document.getElementById('item-title').textContent = data.title;
+            
+            if (data.image) {
+                const img = document.getElementById('item-image');
+                img.src = data.image;
+                img.style.display = 'block';
+            }
+
+            if (data.created) {
+                const date = new Date(data.created).toLocaleDateString(undefined, {
+                    year: 'numeric', month: 'long', day: 'numeric'
+                });
+                document.getElementById('item-date').textContent = `Created on ${date}`;
+            }
+
+            const btn = document.getElementById('download-btn');
+            btn.href = data.url;
+            btn.target = "_blank"; // Open in new tab? or same? User choice usually new tab for downloads
+
+            card.style.display = 'block';
+            // Force reflow
+            void card.offsetWidth;
+            card.classList.add('visible');
+        }
+
+        function showError() {
+            document.getElementById('loading').style.display = 'none';
+            const errCard = document.getElementById('error');
+            errCard.style.display = 'block';
+            void errCard.offsetWidth;
+            errCard.classList.add('visible');
+        }
+
+        function decryptData(encryptedData) {
+            try {
+                // Same logic as addlink.html
+                const decoded = decodeURIComponent(escape(atob(encryptedData)));
+                let decrypted = '';
+                for (let i = 0; i < decoded.length; i++) {
+                    decrypted += String.fromCharCode(
+                        decoded.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length)
+                    );
+                }
+                return decrypted;
+            } catch (e) {
+                return null;
+            }
+        }
+    </script>
+</body>
+</html>

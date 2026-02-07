@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KamaTV Browser</title>
+
+  <!-- ================= ANDROID / OLD BROWSER POLYFILLS ================= -->
+
+  <!-- Promise -->
+  <script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"></script>
+
+  <!-- Fetch -->
+  <script src="https://cdn.jsdelivr.net/npm/whatwg-fetch@3.6.2/dist/fetch.umd.js"></script>
+
+  <!-- requestAnimationFrame -->
+  <script>
+    if (!window.requestAnimationFrame) {
+      window.requestAnimationFrame = function (cb) {
+        return setTimeout(cb, 16);
+      };
+    }
+  </script>
+
+  <!-- Array.find -->
+  <script>
+    if (!Array.prototype.find) {
+      Array.prototype.find = function (fn) {
+        for (var i = 0; i < this.length; i++) {
+          if (fn(this[i], i, this)) return this[i];
+        }
+      };
+    }
+  </script>
+
+  <!-- Object.assign -->
+  <script>
+    if (typeof Object.assign !== "function") {
+      Object.assign = function (target) {
+        if (target == null) throw new TypeError();
+        target = Object(target);
+        for (var i = 1; i < arguments.length; i++) {
+          var src = arguments[i];
+          if (src != null) {
+            for (var key in src) {
+              if (Object.prototype.hasOwnProperty.call(src, key)) {
+                target[key] = src[key];
+              }
+            }
+          }
+        }
+        return target;
+      };
+    }
+  </script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    body {
+      background: #0b0b0b;
+      color: #fff;
+      font-family: Arial;
+      padding: 10px
+    }
+
+    h2 {
+      margin-bottom: 10px
+    }
+
+    .grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(3, 1fr)
+    }
+
+    @media(min-width:992px) {
+      .grid {
+        grid-template-columns: repeat(6, 1fr)
+      }
+    }
+
+    .card {
+      background: #1a1a1a;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer
+    }
+
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      background: #111
+    }
+
+    .card h4 {
+      font-size: 14px;
+      padding: 6px;
+      text-align: center
+    }
+
+    #player {
+      display: none;
+      margin-bottom: 10px
+    }
+
+    #player video {
+      width: 100%;
+      max-height: 450px
+    }
+
+    .nav {
+      text-align: center;
+      margin-top: 15px
+    }
+
+    .nav button,
+    .nav input {
+      padding: 6px 10px;
+      margin: 3px;
+      border: none;
+      border-radius: 4px
+    }
+
+    .nav button {
+      background: #ff0055;
+      color: #fff;
+      cursor: pointer
+    }
+
+    .nav button:disabled {
+      opacity: .4
+    }
+
+    .nav input {
+      width: 60px
+    }
+
+    #pageInfo {
+      margin-left: 8px;
+      opacity: .8
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2 id="title">Categories</h2>
+  <div class="nav">
+    <button onclick="goBack()">Back</button>
+    <button id="prevBtn" onclick="prevPage()">Prev</button>
+    <input id="pageInput" type="number" min="1">
+    <button onclick="goPage()">Go</button>
+    <button id="nextBtn" onclick="nextPage()">Next</button>
+    <span id="pageInfo"></span>
+  </div>
+
+
+  <div id="player"></div>
+  <div id="grid" class="grid"></div>
+
+  <div class="nav">
+    <button id="prevBtn" onclick="prevPage()">Prev</button>
+    <input id="pageInput" type="number" min="1">
+    <button onclick="goPage()">Go</button>
+    <button id="nextBtn" onclick="nextPage()">Next</button>
+    <span id="pageInfo"></span>
+  </div>
+
+  <script>
+    /* ================= CONFIG ================= */
+    const CAT_API = "https://kamatv.in/wp-json/wp/v2/categories?per_page=70";
+    const POST_API = "https://kamatv.in/wp-json/wp/v2/posts";
+
+    const CATEGORY_UI_LIMIT = 15;
+    const POST_UI_LIMIT = 20;
+
+    /* ================= STATE ================= */
+    let mode = "categories", page = 1;
+    let categories = [], posts = [];
+    let renderToken = 0;
+
+    /* ================= DOM ================= */
+    const grid = document.getElementById("grid");
+    const title = document.getElementById("title");
+    const player = document.getElementById("player");
+    const pageInfo = document.getElementById("pageInfo");
+    const pageInput = document.getElementById("pageInput");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    /* ================= UTILS ================= */
+    const j = u => fetch(u).then(r => r.json());
+    const tinyDelay = () => new Promise(r => setTimeout(r, 1));
+
+    function decodeHTML(str) {
+      const t = document.createElement("textarea");
+      t.innerHTML = str;
+      return t.value;
+    }
+
+    /* ================= MP4 & IMG EXTRACTION ================= */
+    function extractMp4(post) {
+      const m = post.content?.rendered?.match(/https:\/\/cdn\.kamatv\.in\/[^"' ]+\.mp4/);
+      return m ? m[0] : null;
+    }
+    function mp4ToImg(mp4) {
+      return mp4 ? mp4.replace(".mp4", ".jpg") : null;
+    }
+
+    /* ================= INIT ================= */
+    loadCategories();
+
+    /* ================= CATEGORIES ================= */
+    function loadCategories() {
+      mode = "categories"; page = 1;
+      title.textContent = "Categories";
+      hidePlayer();
+
+      j(CAT_API).then(d => {
+        categories = d;
+        renderCategories();
+      });
+    }
+
+    async function renderCategories() {
+      const token = ++renderToken;
+      grid.innerHTML = "";
+
+      const slice = categories.slice(
+        (page - 1) * CATEGORY_UI_LIMIT,
+        page * CATEGORY_UI_LIMIT
+      );
+
+      slice.forEach(c => {
+        const d = document.createElement("div");
+        d.className = "card";
+        d.innerHTML = `<img><h4>${c.name}</h4>`;
+        d.onclick = () => loadPosts(c.id, c.name);
+        grid.appendChild(d);
+      });
+
+      updatePageInfo();
+      await new Promise(r => requestAnimationFrame(r));
+
+      for (const c of slice) {
+        if (token !== renderToken) return;
+
+        try {
+          const p = await j(`${POST_API}?categories=${c.id}&per_page=1`);
+          if (!p.length) continue;
+
+          const mp4 = extractMp4(p[0]);
+          const img = mp4ToImg(mp4);
+          if (!img) continue;
+
+          const el = [...grid.children]
+            .find(x => x.textContent === c.name)
+            ?.querySelector("img");
+          if (el) el.src = img;
+
+          await tinyDelay();
+        } catch (e) { }
+      }
+    }
+
+    /* ================= POSTS ================= */
+    function loadPosts(catId, name) {
+      mode = "posts"; page = 1;
+      title.textContent = name;
+      hidePlayer();
+
+      j(`${POST_API}?categories=${catId}&per_page=100`).then(d => {
+        posts = d;
+        renderPosts();
+      });
+    }
+
+    function renderPosts() {
+      renderToken++;
+      grid.innerHTML = "";
+      hidePlayer();
+
+      const slice = posts.slice(
+        (page - 1) * POST_UI_LIMIT,
+        page * POST_UI_LIMIT
+      );
+
+      slice.forEach(p => {
+        const mp4 = extractMp4(p);
+        const img = mp4ToImg(mp4);
+
+        const d = document.createElement("div");
+        d.className = "card";
+        d.innerHTML = `
+      <img src="${img || ""}">
+      <h4>${decodeHTML(p.title.rendered)}</h4>
+    `;
+        d.onclick = () => openPlayer(mp4);
+        grid.appendChild(d);
+      });
+
+      updatePageInfo();
+    }
+
+    /* ================= PLAYER ================= */
+    function openPlayer(mp4) {
+      if (!mp4) return;
+      player.innerHTML = `
+    <video controls autoplay>
+      <source src="${mp4}" type="video/mp4">
+    </video>
+  `;
+      player.style.display = "block";
+    }
+    function hidePlayer() {
+      player.style.display = "none";
+      player.innerHTML = "";
+    }
+
+    /* ================= PAGINATION ================= */
+    function updatePageInfo() {
+      const total = mode === "categories"
+        ? Math.ceil(categories.length / CATEGORY_UI_LIMIT)
+        : Math.ceil(posts.length / POST_UI_LIMIT);
+
+      pageInfo.textContent = `Page ${page} / ${total}`;
+      prevBtn.disabled = page <= 1;
+      nextBtn.disabled = page >= total;
+    }
+    function nextPage() {
+      const total = mode === "categories"
+        ? Math.ceil(categories.length / CATEGORY_UI_LIMIT)
+        : Math.ceil(posts.length / POST_UI_LIMIT);
+      if (page < total) { page++; mode === "categories" ? renderCategories() : renderPosts(); }
+    }
+    function prevPage() {
+      if (page > 1) { page--; mode === "categories" ? renderCategories() : renderPosts(); }
+    }
+    function goPage() {
+      const p = parseInt(pageInput.value);
+      if (!p) return;
+
+      const total = mode === "categories"
+        ? Math.ceil(categories.length / CATEGORY_UI_LIMIT)
+        : Math.ceil(posts.length / POST_UI_LIMIT);
+      if (p >= 1 && p <= total) { page = p; mode === "categories" ? renderCategories() : renderPosts(); }
+    }
+
+    /* ================= BACK BUTTON SUPPORT ================= */
+
+    function goBack() {
+      if (mode === "posts") {
+        loadCategories();
+        history.pushState({ page: "categories" }, "", "#categories");
+      } else {
+        history.back();
+      }
+    }
+
+    /* Browser / Android hardware back */
+    history.pushState({ page: "categories" }, "", "#categories");
+
+    window.addEventListener("popstate", function () {
+      if (mode === "posts") {
+        loadCategories();
+      }
+    });
+  </script>
+
+</body>
+
+</html>

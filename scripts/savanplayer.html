@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shaka HEAD Initiator</title>
+
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/controls.min.css">
+
+    <style>
+        body { background: #000; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; color: white; font-family: sans-serif; }
+        .container { width: 80%; max-width: 800px; text-align: center; }
+        #video-container { width: 100%; background: #111; margin-top: 20px; }
+        #log-box { background: #222; padding: 10px; margin-top: 10px; font-family: monospace; font-size: 12px; text-align: left; border-left: 3px solid #00ff00; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Shaka Native HEAD Request</h2>
+        <div id="log-box">Status: Waiting for Shaka...</div>
+
+        <div id="video-container" data-shaka-player-container>
+            <video autoplay id="video" data-shaka-player></video>
+        </div>
+    </div>
+
+    <script>
+        // THE DIRECT CDN URL (Replace with your current fresh link)
+        const DIRECT_URL = "https://web.saavncdn.com/795/5bb956fc1d3030a584bbadf68fe20a55_160.mp4?Expires=1769429766&Signature=UKPruNA8x~jZg-qlX-FAs72NQ9YOjQGG22Yd2RszwYDlqbH2qYJm1F6aPnUMmbnmp1UCyirstSENnbbnf0yGZH7Ac4p-fMEH-lR~e-qlrfP6W2NVzRY~hk-~-xewH5J~QNAot0lZAlfgkuayAuHyEynZBseSY~S9hRU6ygsjupx4xcnrogMLToJ6Pz3uvScP7ZRjyNU0Ebx3sccQywKfH3GSsokdp1uHYkIcpwCnILrXgg7kTW50nUuj9tKDei4Pv-2VAHln2~JoCkaKTsVQ0Wre9lBO5tff9BsAa1dmvDb6g5LF-c28936tXUWswWLilrBhN9jx1vzFRICPlXH7-Q__&Key-Pair-Id=APKAJB334VX63D3WJ5ZQ";
+
+        async function runBypassTest() {
+            const log = document.getElementById('log-box');
+            const video = document.getElementById('video');
+            const container = document.getElementById('video-container');
+
+            // Initialize Shaka UI and Player
+            const ui = container['ui'];
+            const player = ui.getControls().getPlayer();
+            const netEngine = player.getNetworkingEngine();
+
+            shaka.polyfill.installAll();
+
+            // 1. ADD REQUEST FILTER
+            // This tells Shaka to try and attach headers to every request
+            netEngine.registerRequestFilter((type, request) => {
+                request.headers['Referer'] = 'https://www.jiosaavn.com/';
+                request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+            });
+
+            try {
+                log.innerText = "Status: Sending HEAD request via Shaka NetworkingEngine...";
+
+                // 2. TRIGGER THE HEAD REQUEST MANUALLY
+                // This is the specific part that makes shaka-player.ui.min.js the INITIATOR
+                const headRequest = {
+                    uris: [DIRECT_URL],
+                    method: 'HEAD',
+                    headers: {
+                        'Referer': 'https://www.jiosaavn.com/'
+                    }
+                };
+
+                // RequestType.MANIFEST is used to trigger a high-level network call
+                await netEngine.request(shaka.net.NetworkingEngine.RequestType.MANIFEST, headRequest).promise;
+
+                log.innerText = "Status: HEAD Success (200 OK). Loading Media...";
+
+                // 3. LOAD THE MEDIA
+                await player.load(DIRECT_URL);
+                log.innerText = "Status: Playing Direct Stream!";
+
+            } catch (e) {
+                log.style.color = "#ff4444";
+                log.innerText = "Status: FAILED. Check Network Tab. Error: " + e.message;
+                console.error("Direct Playback Failed:", e);
+            }
+        }
+
+        // Wait for Shaka UI to load before running
+        document.addEventListener('shaka-ui-loaded', runBypassTest);
+    </script>
+</body>
+</html>
