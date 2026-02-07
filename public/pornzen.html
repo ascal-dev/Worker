@@ -131,7 +131,7 @@
         const nextBtn = document.getElementById("nextBtn");
 
         // Worker proxy
-        const PROXY = "https://pornzen.httpsfree-tvsdjjnworkersdev.workers.dev/?url=";
+        const PROXY = "process.env.pornzen_proxy";
 
         // Load posts from PornZen
         function extractTotalPages(res, data) {
