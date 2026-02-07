@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova TV - Multi-Source Streaming</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .header h1 {
+            text-align: center;
+            font-size: 2.5em;
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcf7f, #4ecdc4, #ff6b6b);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient 4s ease infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes gradient {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Channel Selector */
+        .channel-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .channel-btn {
+            padding: 12px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            border-radius: 25px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .channel-btn:hover {
+            background: rgba(255, 107, 107, 0.3);
+            border-color: rgba(255, 107, 107, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .channel-btn.active {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            border-color: #ff6b6b;
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .breadcrumb {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            color: #aaa;
+        }
+
+        .breadcrumb span {
+            cursor: pointer;
+            color: #ff6b6b;
+            text-decoration: underline;
+        }
+
+        .breadcrumb span:hover {
+            color: #ffd93d;
+        }
+
+        .loading {
+            text-align: center;
+            font-size: 1.5em;
+            margin: 80px 0;
+            color: #ff6b6b;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #ff6b6b;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 18px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid rgba(255, 107, 107, 0.2);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-12px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(255, 107, 107, 0.4);
+            border-color: rgba(255, 107, 107, 0.8);
+        }
+
+        .card-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card img {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .card:hover img {
+            transform: scale(1.1);
+        }
+
+        .card-title {
+            padding: 18px;
+            font-size: 1.05em;
+            font-weight: 600;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.4);
+            min-height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.3;
+        }
+
+        .play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 75px;
+            height: 75px;
+            background: rgba(255, 107, 107, 0.95);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .card:hover .play-icon {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .play-icon::after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-left: 26px solid white;
+            border-top: 16px solid transparent;
+            border-bottom: 16px solid transparent;
+            margin-left: 5px;
+        }
+
+        /* Video Modal */
+        .video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.97);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-modal.active {
+            display: flex;
+        }
+
+        .video-container {
+            width: 95%;
+            max-width: 1400px;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 60px rgba(255, 107, 107, 0.3);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 107, 107, 0.95);
+            color: white;
+            border: none;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .close-btn:hover {
+            background: #ff4757;
+            transform: scale(1.15) rotate(90deg);
+        }
+
+        video {
+            width: 100%;
+            max-height: 85vh;
+            display: block;
+            background: #000;
+        }
+
+        .video-title {
+            padding: 25px;
+            background: rgba(255, 107, 107, 0.1);
+            font-size: 1.4em;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .video-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 1.3em;
+            display: none;
+            text-align: center;
+        }
+
+        .video-loading.active {
+            display: block;
+        }
+
+        .category-count {
+            font-size: 0.85em;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .error {
+            color: #ff6b6b;
+            text-align: center;
+            padding: 30px;
+            font-size: 1.3em;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .channel-btn {
+                padding: 10px 20px;
+                font-size: 0.95em;
+            }
+
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 18px;
+            }
+
+            .card img {
+                height: 250px;
+            }
+
+            .card-title {
+                font-size: 0.9em;
+                padding: 14px;
+                min-height: 55px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎬 Nova TV</h1>
+        <div class="channel-selector">
+            <button class="channel-btn active" onclick="switchChannel('fullxcinema')">FullXCinema</button>
+            <button class="channel-btn" onclick="switchChannel('korean')">Korean Erotica</button>
+            <button class="channel-btn" onclick="switchChannel('viralfap')">ViralFap</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="breadcrumb" id="breadcrumb"></div>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            Loading content...
+        </div>
+        <div class="grid" id="contentGrid"></div>
+    </div>
+
+    <!-- Video Modal -->
+    <div class="video-modal" id="videoModal">
+        <button class="close-btn" onclick="closeVideo()">×</button>
+        <div class="video-container">
+            <div class="video-title" id="videoTitle"></div>
+            <div class="video-loading" id="videoLoading">
+                <div class="spinner"></div>
+                <div>Loading video...</div>
+            </div>
+            <video id="videoPlayer" controls autoplay>
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentChannel = 'fullxcinema';
+        let currentView = 'main'; // 'main', 'categories', 'posts'
+        let currentCategory = null;
+        let allData = [];
+        let hls = null;
+
+        // API endpoints
+        const API = {
+            fullxcinema: [
+                'https://fullxcinema.com/wp-json/wp/v2/posts?tags=1674&per_page=100&page=1',
+                'https://fullxcinema.com/wp-json/wp/v2/posts?tags=1674&per_page=100&page=2'
+            ],
+            korean: 'json/erotic korea.json',
+            viralfap: {
+                categories: 'https://viralfap.com/wp-json/wp/v2/categories?per_page=29',
+                posts: 'https://viralfap.com/wp-json/wp/v2/posts?categories={ID}&per_page=100'
+            }
+        };
+
+        const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
+        // Switch channel
+        function switchChannel(channel) {
+            if (currentChannel === channel && currentView === 'main') return;
+            
+            currentChannel = channel;
+            currentView = 'main';
+            currentCategory = null;
+            
+            // Update UI
+            document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Load content
+            loadChannelContent();
+        }
+
+        // Load channel content
+        async function loadChannelContent() {
+            showLoading('Loading content...');
+            document.getElementById('breadcrumb').innerHTML = '';
+            
+            try {
+                switch(currentChannel) {
+                    case 'fullxcinema':
+                        await loadFullXCinema();
+                        break;
+                    case 'korean':
+                        await loadKorean();
+                        break;
+                    case 'viralfap':
+                        await loadViralFapCategories();
+                        break;
+                }
+            } catch (error) {
+                console.error('Error loading channel:', error);
+                showError('Failed to load content. Please try again.');
+            }
+        }
+
+        // ===== FULLXCINEMA =====
+        async function loadFullXCinema() {
+            const responses = await Promise.all(API.fullxcinema.map(url => fetch(url)));
+            const dataArrays = await Promise.all(responses.map(res => res.json()));
+            allData = dataArrays.flat();
+            
+            displayFullXCinemaVideos();
+            hideLoading();
+        }
+
+        function displayFullXCinemaVideos() {
+            const grid = document.getElementById('contentGrid');
+            grid.innerHTML = '';
+            
+            allData.forEach(video => {
+                const card = createCard({
+                    image: video.yoast_head_json?.og_image?.[0]?.url || 
+                           video._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
+                           'https://via.placeholder.com/260x350?text=No+Image',
+                    title: video.title.rendered,
+                    onClick: () => playFullXCinemaVideo(video)
+                });
+                grid.appendChild(card);
+            });
+        }
+
+        async function playFullXCinemaVideo(video) {
+            showVideoModal(video.title.rendered);
+            
+            try {
+                const videoUrl = await extractFullXCinemaUrl(video.link);
+                if (!videoUrl) throw new Error('Video URL not found');
+                
+                playVideoUrl(videoUrl);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load video.');
+                closeVideo();
+            }
+        }
+
+        async function extractFullXCinemaUrl(postUrl) {
+            const response = await fetch(CORS_PROXY + encodeURIComponent(postUrl));
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const metaTag = doc.querySelector('meta[itemprop="contentURL"]');
+            if (metaTag) return metaTag.getAttribute('content');
+            
+            const match = html.match(/https?:\/\/[^\s"']+\.mp4/i);
+            return match ? match[0] : null;
+        }
+
+        // ===== KOREAN EROTICA =====
+        async function loadKorean() {
+            const response = await fetch(API.korean);
+            allData = await response.json();
+            
+            displayKoreanVideos();
+            hideLoading();
+        }
+
+        function displayKoreanVideos() {
+            const grid = document.getElementById('contentGrid');
+            grid.innerHTML = '';
+            
+            allData.forEach(video => {
+                const streamUrl = getKoreanStreamUrl(video);
+                if (!streamUrl) return;
+                
+                const card = createCard({
+                    image: getKoreanPosterImage(video),
+                    title: video.title?.rendered || 'Untitled',
+                    onClick: () => playKoreanVideo(video, streamUrl)
+                });
+                grid.appendChild(card);
+            });
+        }
+
+        function getKoreanStreamUrl(video) {
+            const vs = video.cmb2?.video_player_settings;
+            if (!vs) return null;
+            
+            if (vs.vm_video_url) return vs.vm_video_url;
+            
+            if (vs.vm_video_shortcode) {
+                const match = vs.vm_video_shortcode.match(/src=["']([^"']+\.m3u8[^"']*)["']/i);
+                if (match) return match[1];
+            }
+            
+            if (vs.vid_vtt_preview_sprite_image) {
+                return vs.vid_vtt_preview_sprite_image.replace(/\.(jpg|jpeg|png|gif)$/i, '.m3u8');
+            }
+            
+            return null;
+        }
+
+        function getKoreanPosterImage(video) {
+            return video.cmb2?.poster_feature_image?.vid_m_poster_image ||
+                   video.cmb2?.video_player_settings?.vid_vtt_preview_sprite_image ||
+                   'https://via.placeholder.com/260x350?text=No+Image';
+        }
+
+        function playKoreanVideo(video, streamUrl) {
+            showVideoModal(video.title?.rendered || 'Untitled');
+            playVideoUrl(streamUrl, true); // true = HLS
+        }
+
+        // ===== VIRALFAP =====
+        async function loadViralFapCategories() {
+            currentView = 'categories';
+            const response = await fetch(API.viralfap.categories);
+            allData = await response.json();
+            
+            displayViralFapCategories();
+            hideLoading();
+        }
+
+        function displayViralFapCategories() {
+            const grid = document.getElementById('contentGrid');
+            grid.innerHTML = '';
+            
+            allData.forEach(category => {
+                if (category.count === 0) return;
+                
+                let imageUrl = 'https://via.placeholder.com/260x350?text=' + encodeURIComponent(category.name);
+                if (category.description) {
+                    const imgMatch = category.description.match(/<img[^>]+src="([^">]+)"/);
+                    if (imgMatch) imageUrl = imgMatch[1];
+                }
+                
+                const card = createCard({
+                    image: imageUrl,
+                    title: category.name + `<div class="category-count">${category.count} videos</div>`,
+                    onClick: () => loadViralFapPosts(category)
+                });
+                grid.appendChild(card);
+            });
+        }
+
+        async function loadViralFapPosts(category) {
+            currentView = 'posts';
+            currentCategory = category;
+            
+            document.getElementById('breadcrumb').innerHTML = 
+                `<span onclick="loadViralFapCategories()">Categories</span> > ${category.name}`;
+            
+            showLoading(`Loading ${category.name}...`);
+            
+            const url = API.viralfap.posts.replace('{ID}', category.id);
+            const response = await fetch(url);
+            allData = await response.json();
+            
+            displayViralFapPosts();
+            hideLoading();
+        }
+
+        function displayViralFapPosts() {
+            const grid = document.getElementById('contentGrid');
+            grid.innerHTML = '';
+            
+            allData.forEach(post => {
+                const card = createCard({
+                    image: post.yoast_head_json?.og_image?.[0]?.url ||
+                           post._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
+                           'https://via.placeholder.com/260x350?text=No+Image',
+                    title: post.title.rendered,
+                    onClick: () => playViralFapVideo(post)
+                });
+                grid.appendChild(card);
+            });
+        }
+
+        async function playViralFapVideo(post) {
+            showVideoModal(post.title.rendered);
+            
+            try {
+                const videoUrl = await extractViralFapUrl(post.link);
+                if (!videoUrl) throw new Error('Video URL not found');
+                
+                playVideoUrl(videoUrl);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to extract video URL.');
+                closeVideo();
+            }
+        }
+
+        async function extractViralFapUrl(postUrl) {
+            const response = await fetch(CORS_PROXY + encodeURIComponent(postUrl));
+            const html = await response.text();
+            
+            const iframeMatch = html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+            if (iframeMatch) {
+                const iframeResponse = await fetch(CORS_PROXY + encodeURIComponent(iframeMatch[1]));
+                const iframeHtml = await iframeResponse.text();
+                
+                const videoMatch = iframeHtml.match(/<source\s+src=["']([^"']+\.mp4[^"']*)["']/i);
+                if (videoMatch) return videoMatch[1];
+                
+                const mp4Match = iframeHtml.match(/https?:\/\/[^\s"'<>]+\.mp4/i);
+                if (mp4Match) return mp4Match[0];
+            }
+            
+            const directMatch = html.match(/https?:\/\/[^\s"'<>]+\.mp4/i);
+            return directMatch ? directMatch[0] : null;
+        }
+
+        // ===== HELPERS =====
+        function createCard({ image, title, onClick }) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="card-wrapper">
+                    <img src="${image}" alt="${title}" onerror="this.src='https://via.placeholder.com/260x350?text=No+Image'">
+                    <div class="play-icon"></div>
+                </div>
+                <div class="card-title">${title}</div>
+            `;
+            card.onclick = onClick;
+            return card;
+        }
+
+        function showVideoModal(title) {
+            const modal = document.getElementById('videoModal');
+            const player = document.getElementById('videoPlayer');
+            const titleEl = document.getElementById('videoTitle');
+            const loadingEl = document.getElementById('videoLoading');
+            
+            modal.classList.add('active');
+            titleEl.textContent = title;
+            player.src = '';
+            player.style.display = 'none';
+            loadingEl.classList.add('active');
+        }
+
+        function playVideoUrl(url, isHLS = false) {
+            const player = document.getElementById('videoPlayer');
+            const loadingEl = document.getElementById('videoLoading');
+            
+            // Clean up previous HLS
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
+            
+            setTimeout(() => {
+                if (isHLS && Hls.isSupported() && url.includes('.m3u8')) {
+                    hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+                    hls.loadSource(url);
+                    hls.attachMedia(player);
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        loadingEl.classList.remove('active');
+                        player.style.display = 'block';
+                        player.play().catch(err => console.error('Playback error:', err));
+                    });
+                } else if (player.canPlayType('application/vnd.apple.mpegurl') && url.includes('.m3u8')) {
+                    player.src = url;
+                    player.addEventListener('loadedmetadata', () => {
+                        loadingEl.classList.remove('active');
+                        player.style.display = 'block';
+                        player.play().catch(err => console.error('Playback error:', err));
+                    });
+                } else {
+                    player.src = url;
+                    loadingEl.classList.remove('active');
+                    player.style.display = 'block';
+                    player.play().catch(err => console.error('Playback error:', err));
+                }
+            }, 500);
+        }
+
+        function closeVideo() {
+            const modal = document.getElementById('videoModal');
+            const player = document.getElementById('videoPlayer');
+            const loadingEl = document.getElementById('videoLoading');
+            
+            player.pause();
+            player.src = '';
+            loadingEl.classList.remove('active');
+            modal.classList.remove('active');
+            
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
+        }
+
+        function showLoading(text) {
+            document.getElementById('loading').innerHTML = `<div class="spinner"></div>${text}`;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('contentGrid').innerHTML = '';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showError(text) {
+            document.getElementById('loading').innerHTML = `<div class="error">${text}</div>`;
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeVideo();
+        });
+
+        // Initialize
+        loadChannelContent();
+    </script>
+</body>
+</html>

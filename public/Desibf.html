@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WP Categories & Posts (Stable)</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    body {
+      background: #0b0b0b;
+      color: #fff;
+      font-family: Arial;
+      padding: 10px
+    }
+
+    .grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(3, 1fr)
+    }
+
+    @media(min-width:992px) {
+      .grid {
+        grid-template-columns: repeat(6, 1fr)
+      }
+    }
+
+    .card {
+      background: #1a1a1a;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer
+    }
+
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover
+    }
+
+    .card h4 {
+      font-size: 14px;
+      padding: 6px;
+      text-align: center
+    }
+
+    #player {
+      margin: 10px 0;
+      display: none
+    }
+
+    #player video,
+    #player img {
+      width: 100%;
+      max-height: 450px;
+      object-fit: contain
+    }
+
+    .nav {
+      text-align: center;
+      margin: 15px 0
+    }
+
+    .nav button,
+    .nav input {
+      padding: 6px 10px;
+      margin: 3px;
+      border: none;
+      border-radius: 4px
+    }
+
+    .nav button {
+      background: #ff0055;
+      color: #fff;
+      cursor: pointer
+    }
+
+    .nav input {
+      width: 60px
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2 id="title">Categories</h2>
+  <div class="nav">
+    <button onclick="goBack()">Back</button>
+    <button id="prevBtn" onclick="prevPage()">Prev</button>
+    <input id="pageInput" type="number" min="1">
+    <button onclick="goPage()">Go</button>
+    <button id="nextBtn" onclick="nextPage()">Next</button>
+    <span id="pageInfo"></span>
+  </div>
+
+
+  <div id="player"></div>
+  <div id="grid" class="grid"></div>
+
+  <div class="nav">
+    <button onclick="prevPage()">Prev</button>
+    <input id="pageInput" type="number" min="1">
+    <button onclick="goPage()">Go</button>
+    <button onclick="nextPage()">Next</button>
+  </div>
+
+  <script>
+    /* ========= CONFIG ========= */
+    const API = "https://desibf.com/wp-json/wp/v2";
+    const API_LIMIT = 100;
+    const CATEGORY_UI_LIMIT = 9;
+    const POST_UI_LIMIT = 20;
+    const PROXY = "";
+
+    /* ========= STATE ========= */
+    let mode = "categories";
+    let uiPage = 1;
+    let categoriesCache = [];
+    let postsCache = [];
+    let activeCat = null;
+    let renderVersion = 0;
+
+    /* ========= DOM ========= */
+    const grid = document.getElementById("grid");
+    const player = document.getElementById("player");
+    const title = document.getElementById("title");
+    const pageInput = document.getElementById("pageInput");
+
+    /* ========= UTIL ========= */
+    const j = url => fetch(url).then(r => r.json());
+
+    /* ========= CATEGORIES ========= */
+    async function loadCategories() {
+      mode = "categories";
+      uiPage = 1;
+      activeCat = null;
+      title.textContent = "Categories";
+      hidePlayer();
+      grid.innerHTML = "";
+
+      categoriesCache = await j(`${API}/categories?per_page=${API_LIMIT}`);
+      renderCategories();
+    }
+
+    async function renderCategories() {
+      const version = ++renderVersion;
+
+      grid.innerHTML = "";
+      hidePlayer();
+
+      const start = (uiPage - 1) * CATEGORY_UI_LIMIT;
+      const end = start + CATEGORY_UI_LIMIT;
+      const pageCats = categoriesCache.slice(start, end);
+
+      /* 1️⃣ Render ALL category cards instantly (text only) */
+      pageCats.forEach(c => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.dataset.id = c.id;
+        card.innerHTML = `<img><h4>${c.name}</h4>`;
+        card.onclick = () => loadPosts(c.id, c.name);
+        grid.appendChild(card);
+      });
+
+      /* 2️⃣ Fetch images ONE BY ONE (SEQUENTIAL, GUARANTEED) */
+      for (const c of pageCats) {
+        // if user paged away, stop
+        if (renderVersion !== version) return;
+
+        try {
+          // first post of category
+          const posts = await j(
+            `${API}/posts?categories=${c.id}&per_page=1&page=1`
+          );
+          if (!posts.length || renderVersion !== version) continue;
+
+          // image media only
+          const media = await j(
+            `${API}/media?parent=${posts[0].id}&per_page=5`
+          );
+          if (!media.length || renderVersion !== version) continue;
+
+          const imgUrl = media.find(m =>
+            m.mime_type?.startsWith("image")
+          )?.source_url;
+          if (!imgUrl) continue;
+
+          const imgEl = grid.querySelector(
+            `.card[data-id="${c.id}"] img`
+          );
+          if (imgEl) imgEl.src = PROXY + imgUrl;
+
+        } catch (e) {
+          console.warn("Category image failed:", c.id);
+        }
+      }
+    }
+
+
+    /* ========= POSTS ========= */
+    async function loadPosts(catId, name) {
+      mode = "posts";
+      uiPage = 1;
+      activeCat = catId;
+      title.textContent = name;
+      hidePlayer();
+
+      postsCache = await j(`${API}/posts?categories=${activeCat}&per_page=${API_LIMIT}`);
+      renderPosts();
+    }
+
+    function renderPosts() {
+      const version = ++renderVersion;
+      grid.innerHTML = "";
+      hidePlayer();
+
+      const start = (uiPage - 1) * POST_UI_LIMIT;
+      const end = start + POST_UI_LIMIT;
+      const pagePosts = postsCache.slice(start, end);
+
+      pagePosts.forEach(async post => {
+        try {
+          const media = await j(`${API}/media?parent=${post.id}&per_page=5`);
+          if (renderVersion !== version) return;
+
+          const img = media.find(m => m.mime_type?.startsWith("image"))?.source_url;
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+        <img src="${PROXY + (img || 'https://via.placeholder.com/300')}">
+        <h4>${post.title.rendered}</h4>
+      `;
+          card.onclick = () => openPlayer(post.id, img);
+          grid.appendChild(card);
+        } catch (e) { }
+      });
+    }
+
+    /* ========= PLAYER (HTML5 ONLY) ========= */
+    async function openPlayer(postId, fallbackImg) {
+      showPlayer();
+      try {
+        const media = await j(`${API}/media?parent=${postId}&per_page=10`);
+        const vid = media.find(m => m.mime_type === "video/mp4")?.source_url;
+
+        if (vid) {
+          player.innerHTML = `
+        <video controls autoplay>
+          <source src="${PROXY + vid}" type="video/mp4">
+        </video>`;
+        } else {
+          player.innerHTML = `<img src="${PROXY + fallbackImg}">`;
+        }
+      } catch (e) {
+        player.innerHTML = `<img src="${PROXY + fallbackImg}">`;
+      }
+    }
+
+    function showPlayer() { player.style.display = "block" }
+    function hidePlayer() { player.style.display = "none"; player.innerHTML = "" }
+
+    /* ========= PAGINATION ========= */
+    function nextPage() {
+      const max = mode === "categories" ? categoriesCache.length : postsCache.length;
+      const limit = mode === "categories" ? CATEGORY_UI_LIMIT : POST_UI_LIMIT;
+      if (uiPage * limit < max) { uiPage++; mode === "categories" ? renderCategories() : renderPosts(); }
+    }
+    function prevPage() {
+      if (uiPage > 1) { uiPage--; mode === "categories" ? renderCategories() : renderPosts(); }
+    }
+    function goPage() {
+      const p = parseInt(pageInput.value);
+      if (p > 0) { uiPage = p; mode === "categories" ? renderCategories() : renderPosts(); }
+    }
+
+    /* ========= INIT ========= */
+    loadCategories();
+
+    /* ================= BACK BUTTON SUPPORT ================= */
+
+    function goBack() {
+      if (mode === "posts") {
+        loadCategories();
+        history.pushState({ page: "categories" }, "", "#categories");
+      } else {
+        history.back();
+      }
+    }
+
+    /* Browser / Android hardware back */
+    history.pushState({ page: "categories" }, "", "#categories");
+
+    window.addEventListener("popstate", function () {
+      if (mode === "posts") {
+        loadCategories();
+      }
+    });
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>IteraPlay</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial
+        }
+
+        body {
+            background: #0f0f0f;
+            color: #fff;
+            padding: 10px
+        }
+
+        .nav {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap
+        }
+
+        .nav button {
+            padding: 6px 14px;
+            border: 0;
+            border-radius: 4px;
+            background: #333;
+            color: #fff;
+            cursor: pointer
+        }
+
+        .nav button.active {
+            background: #00c853;
+            color: #000
+        }
+
+        video {
+            width: 100%;
+            max-height: 240px;
+            background: #000;
+            margin-bottom: 12px
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px
+        }
+
+        @media(min-width:768px) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr)
+            }
+        }
+
+        @media(min-width:1024px) {
+            .grid {
+                grid-template-columns: repeat(5, 1fr)
+            }
+        }
+
+        .card {
+            background: #1c1c1c;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column
+        }
+
+        .card img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover
+        }
+
+        .card .info {
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            flex: 1
+        }
+
+        .card h3 {
+            font-size: 13px;
+            height: 32px;
+            overflow: hidden;
+            margin-bottom: 6px
+        }
+
+        .btn {
+            padding: 6px;
+            margin-top: 6px;
+            border: 0;
+            border-radius: 4px;
+            font-size: 13px
+        }
+
+        .play {
+            background: #00c853;
+            color: #000
+        }
+
+        .direct {
+            background: #2979ff;
+            color: #fff
+        }
+
+        .redirect {
+            background: #ff9100;
+            color: #000
+        }
+
+        .disabled {
+            background: #555;
+            color: #aaa
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 12px
+        }
+
+        .loading,
+        .error {
+            text-align: center;
+            padding: 20px;
+            color: #aaa
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="nav">
+        <button class="active" onclick="switchTab('all',this)">All</button>
+        <button onclick="switchTab('viral',this)">Viral</button>
+        <button onclick="switchTab('trending',this)">Trending</button>
+        <button onclick="switchTab('recent',this)">Recent</button>
+    </div>
+
+    <video id="player" controls></video>
+    <div id="grid" class="grid"></div>
+
+    <div class="pagination">
+        <button onclick="prevPage()">Prev</button>
+        <span id="pageInfo"></span>
+        <button onclick="nextPage()">Next</button>
+    </div>
+
+    <script>
+        /* ================= CONFIG ================= */
+        var PROXY = "https://iterplay.httpsfree-tvsdjjnworkersdev.workers.dev/?url=";
+        var SECRET_KEY = "iTeraPl@y_V1d30_S3cur3_K3y_2025_!@#$";
+        var LIMIT = 20;
+
+        /* ================= API MAP ================= */
+        var API = {
+            all: { url: "https://iteraplay.com/api/get-videos.php", mode: "plain" },
+            recent: { url: "https://iteraplay.com/api/get-recent-videos.php", mode: "encrypted" },
+            trending: { url: "https://iteraplay.com/api/get-trending-videos.php", mode: "encrypted" },
+            viral: { url: "https://iteraplay.com/api/get-viral-videos.php", mode: "auto" }
+        };
+
+        /* ================= STATE ================= */
+        var currentTab = "all";
+        var offset = 0;
+        var videos = [];
+
+        /* ================= INIT ================= */
+        document.addEventListener("DOMContentLoaded", loadData);
+
+        /* ================= NAV ================= */
+        function switchTab(tab, btn) {
+            currentTab = tab;
+            offset = 0;
+            var b = document.querySelectorAll(".nav button");
+            for (var i = 0; i < b.length; i++) b[i].classList.remove("active");
+            btn.classList.add("active");
+            loadData();
+        }
+
+        /* ================= XOR ================= */
+        function xorDecrypt(b64, key) {
+            var d = atob(b64), o = "";
+            for (var i = 0; i < d.length; i++) {
+                o += String.fromCharCode(d.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+            }
+            return o;
+        }
+
+        /* ================= FETCHERS ================= */
+        function fetchPlain(url) {
+            return fetch(PROXY + url).then(r => r.json()).then(j => j.videos || []);
+        }
+        function fetchEncrypted(url) {
+            return fetch(PROXY + url).then(r => r.json()).then(j => {
+                var p = JSON.parse(xorDecrypt(j.data, SECRET_KEY));
+                return p.videos || p || [];
+            });
+        }
+        function fetchAuto(url) {
+            return fetch(PROXY + url).then(r => r.json()).then(j => {
+                if (j.videos) return j.videos;
+                if (j.data) {
+                    var p = JSON.parse(xorDecrypt(j.data, SECRET_KEY));
+                    return p.videos || p || [];
+                }
+                return [];
+            });
+        }
+
+        /* ================= NORMALIZE ================= */
+        function normalize(v) {
+            return {
+                id: v.id || v.video_id || null,
+                title: v.title || v.display_name || v.file_name || "Untitled",
+                thumbnail: v.thumbnail || "",
+                is_premium: v.is_premium === false ? false : true,
+                video_url: v.video_url || "",
+                custom_url: v.custom_url || "",
+                terabox_url: v.terabox_url || v.external_url || "",
+                date: v.upload_date || v.created_at || ""
+            };
+        }
+
+        /* ================= LOAD ================= */
+        function loadData() {
+            showLoading();
+            var api = API[currentTab];
+            var url = api.url + "?offset=" + offset + "&limit=" + LIMIT + "&reset_seed=true";
+            var f = api.mode === "plain" ? fetchPlain : api.mode === "encrypted" ? fetchEncrypted : fetchAuto;
+
+            f(url).then(raw => {
+                videos = [];
+                for (var i = 0; i < raw.length; i++) videos.push(normalize(raw[i]));
+                videos.sort((a, b) => new Date(b.date) - new Date(a.date));
+                render();
+            }).catch(() => showError("Failed to load"));
+        }
+
+        /* ================= FREE MP4 ================= */
+        function fetchVideoUrl(custom) {
+            return fetch("https://iteraplay.com/s/watch.php?url=" + encodeURIComponent(custom))
+                .then(r => r.text())
+                .then(h => {
+                    var m = h.match(/https:\/\/pub-[^'"]+\.mp4/);
+                    if (m) return m[0];
+                    throw "mp4_not_found";
+                });
+        }
+
+        /* ================= VIRAL PREMIUM HTML SCRAPE ================= */
+        function fetchViralPremiumTeraBoxUrl(videoId) {
+            var pageUrl = "https://iteraplay.com/viral";
+            return fetch(pageUrl)
+                .then(r => r.text())
+                .then(html => {
+                    var re = new RegExp(
+                        'data-video-id="' + videoId + '"[^>]*data-terabox-url="([^"]+)"',
+                        'i'
+                    );
+                    var m = html.match(re);
+                    if (m && m[1]) return m[1];
+                    throw "terabox_not_found";
+                });
+        }
+
+        /* ================= RENDER ================= */
+        function render() {
+            var g = document.getElementById("grid"); g.innerHTML = "";
+            if (!videos.length) { showError("No videos found"); return; }
+
+            for (let i = 0; i < videos.length; i++) {
+                var v = videos[i];
+                var c = document.createElement("div"); c.className = "card";
+                var h = '<img src="' + v.thumbnail + '"><div class="info"><h3>' + v.title + '</h3>';
+
+                if (v.is_premium) {
+                    if (v.video_url) {
+                        h += '<button class="btn direct" onclick="playDirect(\'' + v.video_url + '\')">Direct Play</button>';
+                    } else {
+                        h += '<button class="btn disabled">Direct Play</button>';
+                    }
+                    h += '<button class="btn redirect" onclick="shareToBypassByIndex(' + i + ')">Redirect / Bypass</button>';
+                } else {
+                    h += '<button class="btn play" onclick="playFree(\'' + v.custom_url + '\')">Play</button>';
+                }
+
+                c.innerHTML = h + "</div>";
+                g.appendChild(c);
+            }
+
+            document.getElementById("pageInfo").innerText =
+                "Showing " + (offset + 1) + " – " + (offset + videos.length);
+        }
+
+        /* ================= PLAY ================= */
+        function playFree(u) {
+            fetchVideoUrl(u).then(mp4 => {
+                var p = document.getElementById("player");
+                p.src = mp4; p.play();
+            });
+        }
+        function playDirect(u) {
+            var p = document.getElementById("player");
+            p.src = u; p.play();
+        }
+
+        /* ================= TERABOX REDIRECT (FINAL) ================= */
+        function shareToBypassByIndex(index) {
+            var v = videos[index];
+            if (!v) { alert("Video not found"); return; }
+
+            // 1) API already has TeraBox URL
+            if (v.terabox_url) {
+                localStorage.setItem("sharedTeraboxUrlfromiterplay", v.terabox_url);
+                window.location.href = "https://tv-4vo.pages.dev/bypasstera.html";
+                return;
+            }
+
+            // 2) Viral premium → scrape HTML
+            if (currentTab === "viral" && v.is_premium && v.id) {
+                fetchViralPremiumTeraBoxUrl(v.id)
+                    .then(url => {
+                        localStorage.setItem("sharedTeraboxUrl", url);
+                        window.location.href = "https://tv-4vo.pages.dev/bypasstera.html";
+                    })
+                    .catch(() => alert("Failed to extract TeraBox link"));
+                return;
+            }
+
+            alert("TeraBox link not available");
+        }
+
+        /* ================= PAGINATION ================= */
+        function nextPage() { offset += LIMIT; loadData(); }
+        function prevPage() { if (offset >= LIMIT) { offset -= LIMIT; loadData(); } }
+
+        /* ================= UI ================= */
+        function showLoading() { document.getElementById("grid").innerHTML = "<div class='loading'>Loading...</div>"; }
+        function showError(m) { document.getElementById("grid").innerHTML = "<div class='error'>" + m + "</div>"; }
+    </script>
+
+</body>
+
+</html>
