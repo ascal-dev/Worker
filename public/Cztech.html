@@ -104,11 +104,9 @@ body{
 <script>
 /* ================= CONFIG ================= */
 
-const PROXY =
-  "https://czech.httpsfree-tvsdjjnworkersdev.workers.dev/?url=";
+const PROXY ="process.env.czech_proxy";
 
-const BASE_AJAX =
-  "https://www.gosexpod.com/v5/gosexpod/trending_iframe.lazy.2021.ajax.php";
+const BASE_AJAX = "process.env.czech_BASE_AJAX";
 
 let page = 1;
 let videos = [];
