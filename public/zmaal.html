@@ -413,14 +413,14 @@
 
         function proxyUrl(url) {
             if (!url) return '';
-            if (url.includes('/api/proxy?url=')) return url;
-            return `/api/proxy?url=${url}}`;
+            if (url.includes('/api/proxy?')) return url;
+            return `/api/proxy?extract=true&url=${encodeURIComponent(url)}`;
         }
 
         function buildFetchUrl(url) {
             if (!url) return '';
             if (window.location.protocol === 'file:') {
-                return EXTERNAL_CORS_PROXY + url;
+                return EXTERNAL_CORS_PROXY + encodeURIComponent(url);
             }
             return proxyUrl(url);
         }
