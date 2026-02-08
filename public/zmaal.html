@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Zmaal Latest Posts</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg: #0b1117;
@@ -69,6 +71,20 @@
             flex-wrap: wrap;
         }
 
+        .search {
+            min-width: 200px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg2);
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .search::placeholder {
+            color: #64748b;
+        }
+
         .btn {
             background: var(--bg2);
             color: var(--text);
@@ -102,6 +118,10 @@
             grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
             gap: 16px;
             margin-top: 10px;
+        }
+
+        .grid.search-mode {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
         .card {
@@ -156,7 +176,7 @@
             border-radius: 10px;
             font-size: 12px;
             font-weight: 600;
-            border: 1px solid rgba(0,0,0,0.15);
+            border: 1px solid rgba(0, 0, 0, 0.15);
         }
 
         .ghost-btn {
@@ -191,7 +211,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         footer {
@@ -267,18 +289,32 @@
         }
 
         @media (max-width: 640px) {
-            .brand { font-size: 1.3rem; }
-            .grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
-            .thumb { height: 140px; }
+            .brand {
+                font-size: 1.3rem;
+            }
+
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            }
+
+            .thumb {
+                height: 140px;
+            }
         }
     </style>
 </head>
+
 <body>
     <div class="wrap">
         <header>
             <div class="brand">Zmaal Latest</div>
             <div class="pill">Direct from WP JSON</div>
             <div class="toolbar">
+                <input id="searchInput" class="search" type="text" placeholder="Search posts..." />
+                <button class="btn" id="searchBtn">Search</button>
+                <button class="btn" id="clearBtn">Clear</button>
+                <input id="pageInput" class="search" type="number" min="1" placeholder="Go to page" style="max-width:120px;" />
+                <button class="btn" id="goBtn">Go</button>
                 <button class="btn" id="prevBtn">Prev</button>
                 <div class="page-info" id="pageInfo">Page 1</div>
                 <button class="btn" id="nextBtn">Next</button>
@@ -291,7 +327,7 @@
         <footer>Showing the latest posts with direct links built from the WP JSON feed.</footer>
     </div>
 
-        <div class="player" id="player">
+    <div class="player" id="player">
         <div class="player-card">
             <div class="player-header">
                 <div class="player-title" id="playerTitle">Now Playing</div>
@@ -309,6 +345,11 @@
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
         const pageInfo = document.getElementById('pageInfo');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const pageInput = document.getElementById('pageInput');
+        const goBtn = document.getElementById('goBtn');
         const player = document.getElementById('player');
         const playerVideo = document.getElementById('playerVideo');
         const playerTitle = document.getElementById('playerTitle');
@@ -318,7 +359,8 @@
             page: 1,
             perPage: 12,
             totalPages: 1,
-            loading: false
+            loading: false,
+            query: ''
         };
 
         function showStatus(message, loading = false) {
@@ -331,6 +373,15 @@
         function hideStatus() {
             statusEl.style.display = 'none';
             statusEl.innerHTML = '';
+        }
+
+        function setSearchMode(enabled) {
+            grid.classList.toggle('search-mode', enabled);
+            prevBtn.style.display = enabled ? 'none' : '';
+            nextBtn.style.display = enabled ? 'none' : '';
+            pageInfo.style.display = enabled ? 'none' : '';
+            if (pageInput) pageInput.style.display = enabled ? 'none' : '';
+            if (goBtn) goBtn.style.display = enabled ? 'none' : '';
         }
 
         function decodeHtml(html) {
@@ -357,26 +408,67 @@
                 || '';
         }
 
-        function buildZmaalUrl(p) {
-            let category = 'Zmaal';
-            if (p.class_list && Array.isArray(p.class_list)) {
-                const catClass = p.class_list.find(c => c.startsWith('category-') && c !== 'category-uncategorized');
-                if (catClass) {
-                    category = catClass.replace('category-', '').split('-')
-                        .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                }
+
+        const EXTERNAL_CORS_PROXY = 'https://tv-4vo.pages.dev/api/proxy?extract=true&url=';
+
+        function proxyUrl(url) {
+            if (!url) return '';
+            if (url.includes('/api/proxy?url=')) return url;
+            return `/api/proxy?url=${url}}`;
+        }
+
+        function buildFetchUrl(url) {
+            if (!url) return '';
+            if (window.location.protocol === 'file:') {
+                return EXTERNAL_CORS_PROXY + url;
             }
+            return proxyUrl(url);
+        }
 
-            const title = decodeHtml(p.title?.rendered || '');
-            let series = title.replace(/\s*(Episode|Ep\.?)[\s]*\d+.*/i, '').trim();
-            series = series.replace(/\s*\(\d{4}\)\s*/g, '').trim();
-            const fullTitle = title.replace(/\s+/g, ' ').trim();
+        async function getZmaalMP4(videoUrl) {
+            try {
+                const fetchUrl = buildFetchUrl(videoUrl);
+                const res = await fetch(fetchUrl);
+                if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+                const html = await res.text();
 
-            const categoryPath = category.trim().replace(/\s/g, '%20');
-            const seriesPath = series.trim().replace(/\s/g, '%20');
-            const titlePath = fullTitle.trim().replace(/\s/g, '%20');
+                // Try JSON-LD first
+                const jsonLdScripts = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi);
+                if (jsonLdScripts) {
+                    for (let script of jsonLdScripts) {
+                        try {
+                            const json = JSON.parse(script.replace(/<script.*?>|<\/script>/gi, ""));
+                            const items = Array.isArray(json) ? json : [json];
+                            for (let item of items) {
+                                if (item["@type"] === "VideoObject" && item.contentUrl) {
+                                    return decodeURIComponent(item.contentUrl);
+                                }
+                            }
+                        } catch (e) { continue; }
+                    }
+                }
 
-            return `https://video.maalcdn.com/${categoryPath}/${seriesPath}/${titlePath}.mp4`;
+                // Fallback: regex search for contentUrl in HTML
+                const mp4Match = html.match(/"contentUrl"\s*:\s*"([^"]+\.mp4)"/);
+                if (mp4Match && mp4Match[1]) {
+                    return decodeURIComponent(mp4Match[1]);
+                }
+
+                throw new Error("No MP4 URL found on the page");
+            } catch (err) {
+                console.error("Error:", err);
+                return null;
+            }
+        }
+
+        function getEpisodeUrl(post) {
+            return decodeHtml(
+                post?.meta?.link
+                || post?.acf?.link
+                || post?.link
+                || post?.yoast_head_json?.og_url
+                || ''
+            );
         }
 
         function renderPosts(posts) {
@@ -391,7 +483,10 @@
                 const title = decodeHtml(p.title?.rendered || 'Untitled');
                 const image = getImage(p);
                 const date = formatDate(p.date);
-                const videoUrl = buildZmaalUrl(p);
+                const videoUrl = getEpisodeUrl(p);
+                const postUrl = decodeHtml(p.link || '');
+                const hasVideoUrl = Boolean(videoUrl);
+                
                 return `
                     <article class="card">
                         <img class="thumb" src="${image}" alt="${title}" loading="lazy" onerror="this.style.display='none'" />
@@ -399,20 +494,36 @@
                             <div class="title">${title}</div>
                             <div class="meta">${date}</div>
                             <div class="actions">
-                                <button class="link-btn" data-play="${videoUrl}" data-title="${title}">Play</button>
-                                <a class="ghost-btn" href="${videoUrl}" target="_blank" rel="noopener">Direct Video</a>
-                                <a class="ghost-btn" href="${p.link}" target="_blank" rel="noopener">Open Post</a>
+                                <button class="link-btn" data-url="${videoUrl}" data-title="${title}" ${hasVideoUrl ? '' : 'disabled'}>${hasVideoUrl ? 'Play' : 'No Link'}</button>
+                                <a class="ghost-btn" href="${postUrl}" target="_blank" rel="noopener">Open Post</a>
                             </div>
                         </div>
                     </article>
                 `;
             }).join('');
 
-            grid.querySelectorAll('[data-play]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const url = btn.getAttribute('data-play');
+            grid.querySelectorAll('.link-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const postUrl = btn.getAttribute('data-url');
                     const title = btn.getAttribute('data-title') || 'Now Playing';
-                    openPlayer(url, title);
+                    
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Loading...';
+                    btn.disabled = true;
+
+                    try {
+                        const mp4Url = await getZmaalMP4(postUrl);
+                        if (mp4Url) {
+                            openPlayer(mp4Url, title);
+                        } else {
+                            alert('Could not extract video URL. Please try opening the post directly.');
+                        }
+                    } catch (e) {
+                        alert('Error: ' + e.message);
+                    } finally {
+                        btn.textContent = originalText;
+                        btn.disabled = false;
+                    }
                 });
             });
         }
@@ -439,13 +550,20 @@
             nextBtn.disabled = true;
 
             try {
-                const url = `https://zmaal.net/wp-json/wp/v2/posts?per_page=${state.perPage}&page=${page}&_embed`;
+                const searchMode = Boolean(state.query);
+                const params = new URLSearchParams({
+                    per_page: searchMode ? 100 : state.perPage,
+                    page: searchMode ? 1 : page,
+                    _embed: '1'
+                });
+                if (searchMode) params.set('search', state.query);
+                const url = `https://zmaal.net/wp-json/wp/v2/posts?${params.toString()}`;
                 const res = await fetch(url);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
                 const total = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
-                state.totalPages = Number.isFinite(total) ? total : 1;
-                state.page = page;
+                state.totalPages = searchMode ? 1 : (Number.isFinite(total) ? total : 1);
+                state.page = searchMode ? 1 : page;
 
                 const posts = await res.json();
                 renderPosts(posts);
@@ -458,7 +576,29 @@
                 pageInfo.textContent = `Page ${state.page} of ${state.totalPages}`;
                 prevBtn.disabled = state.page <= 1;
                 nextBtn.disabled = state.page >= state.totalPages;
+                if (pageInput) pageInput.value = String(state.page);
+                setSearchMode(Boolean(state.query));
             }
+        }
+
+        function runSearch() {
+            state.query = (searchInput.value || '').trim();
+            state.page = 1;
+            loadPage(1);
+        }
+
+        function clearSearch() {
+            searchInput.value = '';
+            state.query = '';
+            state.page = 1;
+            loadPage(1);
+        }
+
+        function goToPage() {
+            const p = parseInt(pageInput.value, 10);
+            if (!p) return;
+            const target = Math.max(1, Math.min(state.totalPages, p));
+            loadPage(target);
         }
 
         prevBtn.addEventListener('click', () => {
@@ -469,6 +609,17 @@
             if (state.page < state.totalPages) loadPage(state.page + 1);
         });
 
+        searchBtn.addEventListener('click', runSearch);
+        clearBtn.addEventListener('click', clearSearch);
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') runSearch();
+        });
+
+        goBtn.addEventListener('click', goToPage);
+        pageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') goToPage();
+        });
+
         playerClose.addEventListener('click', closePlayer);
         player.addEventListener('click', (e) => {
             if (e.target === player) closePlayer();
@@ -477,4 +628,5 @@
         loadPage(1);
     </script>
 </body>
+
 </html>
