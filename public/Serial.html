@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SerialMaza Posts</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b1117;
+            --bg2: #0f1721;
+            --card: #111b25;
+            --text: #f1f5f9;
+            --text2: #94a3b8;
+            --accent: #38bdf8;
+            --accent2: #f59e0b;
+            --border: rgba(148, 163, 184, 0.18);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Sora', system-ui, sans-serif;
+            background:
+                radial-gradient(1100px 600px at 10% -10%, rgba(56, 189, 248, 0.18), transparent 60%),
+                radial-gradient(900px 500px at 90% 0%, rgba(245, 158, 11, 0.18), transparent 55%),
+                var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 28px 18px 60px;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .brand {
+            font-weight: 800;
+            font-size: 1.6rem;
+            letter-spacing: 0.4px;
+        }
+
+        .pill {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-size: 12px;
+            color: var(--text2);
+            background: rgba(15, 23, 33, 0.6);
+        }
+
+        .toolbar {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .search {
+            min-width: 200px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg2);
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .search::placeholder {
+            color: #64748b;
+        }
+
+
+
+        .btn {
+            background: var(--bg2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: transform 0.2s ease, border 0.2s ease;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            border-color: var(--accent);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            color: var(--text2);
+            font-size: 12px;
+            min-width: 110px;
+            text-align: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 16px;
+            margin-top: 10px;
+            align-items: stretch;
+        }
+
+        .grid.search-mode {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(17, 27, 37, 0.9), rgba(9, 15, 23, 0.9));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .thumb {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            height: auto;
+            background: #0b121a;
+            display: block;
+            object-fit: cover;
+        }
+
+        .card-body {
+            padding: 14px 14px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+            justify-content: space-between;
+            min-height: 78px;
+        }
+
+        .title {
+            font-size: 14px;
+            line-height: 1.4;
+            font-weight: 600;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .meta {
+            color: var(--text2);
+            font-size: 11px;
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: auto;
+        }
+
+        .card-link {
+            color: inherit;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            min-height: 300px;
+            height: 100%;
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 18px;
+            border-radius: 14px;
+            background: rgba(15, 23, 33, 0.7);
+            border: 1px dashed var(--border);
+            color: var(--text2);
+        }
+
+        .spinner {
+            width: 26px;
+            height: 26px;
+            border: 3px solid rgba(148, 163, 184, 0.2);
+            border-top-color: var(--accent2);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .details {
+            margin-top: 12px;
+            padding: 12px;
+            border-top: 1px solid var(--border);
+            background: rgba(8, 13, 20, 0.65);
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .details.show {
+            display: flex;
+        }
+
+        .detail-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .chip {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.12);
+            border: 1px solid var(--border);
+            color: var(--text2);
+        }
+
+        .download-btn {
+            text-decoration: none;
+            color: #0b1117;
+            background: var(--accent2);
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+        }
+
+        footer {
+            margin-top: 24px;
+            color: var(--text2);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .calendar-pop {
+            position: relative;
+        }
+
+        .calendar-panel {
+            position: absolute;
+            top: 42px;
+            right: 0;
+            width: 220px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: rgba(8, 13, 20, 0.95);
+            padding: 10px;
+            display: none;
+            z-index: 10;
+        }
+
+        .calendar-panel.show {
+            display: block;
+        }
+
+        .calendar-title {
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text2);
+            margin-bottom: 6px;
+        }
+
+        .date-input {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg2);
+            color: var(--text);
+            font-size: 12px;
+        }
+
+        @media (max-width: 640px) {
+            .brand {
+                font-size: 1.3rem;
+            }
+
+            .grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .thumb {
+                aspect-ratio: 16 / 9;
+                height: auto;
+            }
+
+            .title {
+                font-size: 12px;
+                -webkit-line-clamp: 3;
+            }
+
+            .meta {
+                font-size: 10px;
+            }
+
+            .card-link {
+                min-height: 220px;
+            }
+
+            .card-body {
+                padding: 10px 10px 8px;
+                gap: 6px;
+                min-height: 64px;
+            }
+
+            footer {
+                margin-top: 12px;
+            }
+        }
+
+        @media (min-width: 641px) and (max-width: 900px) {
+            .grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        .detail-page {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 28px 18px 60px;
+        }
+
+        .detail-hero {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: var(--text);
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--text2);
+        }
+
+        .detail-hero img {
+            width: 100%;
+            max-width: 320px;
+            max-height: 420px;
+            object-fit: cover;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: #0b121a;
+        }
+
+        .detail-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .detail-meta {
+            color: var(--text2);
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .detail-content {
+            margin-top: 18px;
+            color: var(--text2);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .detail-links {
+            margin-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .detail-link-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .link-pill {
+            text-decoration: none;
+            color: var(--text);
+            background: transparent;
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .source-btn {
+            background: var(--bg2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        @media (max-width: 860px) {
+            .detail-hero {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap" id="homeView">
+        <header>
+            <div class="brand">SerialMaza</div>
+            <div class="pill">WP JSON + Link Resolver</div>
+            <div class="toolbar">
+                <input id="searchInput" class="search" type="text" placeholder="Search posts..." />
+                <button class="btn" id="searchBtn">Search</button>
+                <button class="btn" id="clearBtn">Clear</button>
+                <div class="calendar-pop">
+                    <button class="btn" id="calendarToggle">Calendar</button>
+                    <div class="calendar-panel" id="calendarPanel">
+                        <div class="calendar-title">Date</div>
+                        <input id="startDate" class="date-input" type="date" />
+                    </div>
+                </div>
+                <input id="pageInput" class="search" type="number" min="1" placeholder="Go to page" style="max-width:120px;" />
+                <button class="btn" id="goBtn">Go</button>
+                <button class="btn" id="prevBtn">Prev</button>
+                <div class="page-info" id="pageInfo">Page 1</div>
+                <button class="btn" id="nextBtn">Next</button>
+            </div>
+        </header>
+
+        <div id="status" class="status" style="display:none;"></div>
+        <div class="grid" id="grid"></div>
+
+        <footer>Tap a post to open details and resolve links to direct downloads.</footer>
+    </div>
+
+    <div class="detail-page" id="detailView" style="display:none;"></div>
+
+    <script>
+        const grid = document.getElementById('grid');
+        const statusEl = document.getElementById('status');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const pageInfo = document.getElementById('pageInfo');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const pageInput = document.getElementById('pageInput');
+        const goBtn = document.getElementById('goBtn');
+        const homeView = document.getElementById('homeView');
+        const detailView = document.getElementById('detailView');
+        const calendarToggle = document.getElementById('calendarToggle');
+        const calendarPanel = document.getElementById('calendarPanel');
+        const startDateInput = document.getElementById('startDate');
+
+        const state = {
+            page: 1,
+            perPage: 30,
+            totalPages: 1,
+            loading: false,
+            query: '',
+            startDate: '',
+            endDate: '',
+            lastPosts: []
+        };
+
+        const EXTERNAL_CORS_PROXY = 'https://tv-4vo.pages.dev/api/proxy?extract=true&url=';
+
+        function buildFetchUrl(url) {
+            if (!url) return '';
+            if (url.includes('/api/proxy?')) return url;
+            return EXTERNAL_CORS_PROXY + url;
+        }
+
+        function showStatus(message, loading = false) {
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = loading
+                ? `<span class="spinner"></span>${message}`
+                : message;
+        }
+
+        function hideStatus() {
+            statusEl.style.display = 'none';
+            statusEl.innerHTML = '';
+        }
+
+        function setSearchMode(enabled) {
+            grid.classList.toggle('search-mode', enabled);
+            prevBtn.style.display = enabled ? 'none' : '';
+            nextBtn.style.display = enabled ? 'none' : '';
+            pageInfo.style.display = enabled ? 'none' : '';
+            if (pageInput) pageInput.style.display = enabled ? 'none' : '';
+            if (goBtn) goBtn.style.display = enabled ? 'none' : '';
+        }
+
+        function decodeHtml(html) {
+            const txt = document.createElement('textarea');
+            txt.innerHTML = html;
+            return txt.value;
+        }
+
+        function formatDate(dateStr) {
+            try {
+                return new Date(dateStr).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            } catch {
+                return dateStr || '';
+            }
+        }
+
+        function formatTime(dateStr) {
+            try {
+                return new Date(dateStr).toLocaleTimeString(undefined, {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch {
+                return '';
+            }
+        }
+
+        function filterPostsByDate(posts) {
+            if (!state.startDate) return posts;
+            return posts.filter(p => {
+                const raw = p.date || p.date_gmt || '';
+                const day = raw ? raw.slice(0, 10) : '';
+                return day === state.startDate;
+            });
+        }
+
+        function slugifyTitle(title) {
+            return (title || '')
+                .toLowerCase()
+                .replace(/&/g, 'and')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '');
+        }
+
+        function buildUploadUrlFromFile(file) {
+            if (!file) return '';
+            return `https://serialmaza.xyz/wp-content/uploads/${file}`;
+        }
+
+        function getEmbeddedImage(post) {
+            const media = post._embedded?.['wp:featuredmedia']?.[0];
+            return buildUploadUrlFromFile(media?.media_details?.file) || '';
+        }
+
+        function extractImagesFromContent(html) {
+            const imgs = new Set();
+            if (!html) return [];
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            temp.querySelectorAll('img[src]').forEach(img => imgs.add(img.getAttribute('src')));
+            return Array.from(imgs).filter(Boolean);
+        }
+
+        function extractLinksFromContent(html) {
+            const links = new Set();
+            if (!html) return [];
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            temp.querySelectorAll('a[href]').forEach(a => links.add(a.getAttribute('href')));
+            const text = temp.textContent || '';
+            const regex = /(https?:\/\/articleweb\.biz\/vid\/(vkspeed|okru|vkprime|multiup)\.php\?id=[A-Za-z0-9._-]+)/gi;
+            let match;
+            while ((match = regex.exec(text))) {
+                links.add(match[1]);
+            }
+            return Array.from(links).filter(Boolean);
+        }
+
+        function classifyLink(url) {
+            const clean = decodeHtml(url).trim();
+            const idMatch = clean.match(/id=([A-Za-z0-9._-]+)/);
+            const id = idMatch ? idMatch[1] : '';
+            if (clean.includes('/vkspeed.php')) {
+                return {
+                    type: 'vkspeed',
+                    id,
+                    original: clean,
+                    converted: id ? `https://vkspeed.com/embed-${id}.html` : clean
+                };
+            }
+            if (clean.includes('/okru.php')) {
+                return {
+                    type: 'okru',
+                    id,
+                    original: clean,
+                    converted: id ? `https://ok.ru/videoembed/${id}` : clean
+                };
+            }
+            if (clean.includes('/vkprime.php')) {
+                return {
+                    type: 'vkprime',
+                    id,
+                    original: clean,
+                    converted: id ? `https://vkprime.com/embed-${id}.html` : clean
+                };
+            }
+            if (clean.includes('/multiup.php')) {
+                return {
+                    type: 'multiup',
+                    id,
+                    original: clean,
+                    converted: id ? `https://multiup.io/en/mirror/${id}` : clean
+                };
+            }
+            return null;
+        }
+
+        function extractMp4(html) {
+            const mp4Match = html.match(/https?:\/\/[^"'\\s]+\.mp4(\?[^"'\\s]+)?/i);
+            if (mp4Match && mp4Match[0]) return mp4Match[0];
+            const fileMatch = html.match(/["']file["']\s*:\s*["']([^"']+\.mp4[^"']*)["']/i);
+            if (fileMatch && fileMatch[1]) return fileMatch[1];
+            return '';
+        }
+
+        function extractM3u8(html) {
+            const m3u8Match = html.match(/https?:\/\/[^"'\\s]+\.m3u8(\?[^"'\\s]+)?/i);
+            return m3u8Match && m3u8Match[0] ? m3u8Match[0] : '';
+        }
+
+        async function resolveDownload(linkItem) {
+            if (!linkItem?.converted) return '';
+            if (linkItem.type === 'multiup') return '';
+            try {
+                const res = await fetch(buildFetchUrl(linkItem.converted));
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const html = await res.text();
+                if (linkItem.type === 'okru') return extractM3u8(html);
+                return extractMp4(html);
+            } catch (err) {
+                console.error('Resolve error', err);
+                return '';
+            }
+        }
+
+        function renderPosts(posts) {
+            if (!posts.length) {
+                showStatus('No posts found. Try another page.', false);
+                grid.innerHTML = '';
+                return;
+            }
+
+            const filtered = filterPostsByDate(posts);
+            if (!filtered.length) {
+                showStatus('No posts found for selected date range.', false);
+                grid.innerHTML = '';
+                return;
+            }
+
+            hideStatus();
+            grid.innerHTML = filtered.map((p, idx) => {
+                const title = decodeHtml(p.title?.rendered || 'Untitled');
+                const image = getEmbeddedImage(p);
+                const date = formatDate(p.date);
+                const time = formatTime(p.date);
+                return `
+                    <article class="card" data-index="${idx}">
+                        <a class="card-link" href="Serial.html?post=${p.id}">
+                            <img class="thumb" src="${image}" alt="${title}" loading="lazy" />
+                            <div class="card-body">
+                                <div class="title">${title}</div>
+                                <div class="meta">${date} • ${time}</div>
+                            </div>
+                        </a>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function renderDetail(post, mappedLinks, contentImages) {
+            const title = decodeHtml(post.title?.rendered || 'Untitled');
+            const date = formatDate(post.date);
+            const time = formatTime(post.date);
+            const fullDate = (() => {
+                try {
+                    return new Date(post.date).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                } catch {
+                    return post.date || '';
+                }
+            })();
+            const image = getEmbeddedImage(post);
+            const content = post.content?.rendered || '';
+            const plain = decodeHtml(content).replace(/<[^>]+>/g, '').trim();
+
+            detailView.innerHTML = `
+                <div class="detail-header">
+                    <a class="back-btn" href="Serial.html">Back</a>
+                    <div class="section-title">Post Details</div>
+                </div>
+                <div class="detail-hero">
+                    <img src="${image}" alt="${title}" />
+                    <div>
+                        <div class="detail-title">${title}</div>
+                        <div class="detail-meta">${date} • ${fullDate} at ${time}</div>
+                        <div class="detail-content">${plain || 'No details available.'}</div>
+                        <div class="detail-links">
+                            <div class="section-title">Player Links</div>
+                            ${mappedLinks.length ? mappedLinks.map(item => `
+                                <a class="source-btn" href="${item.converted}" target="_blank" rel="noopener">${item.type.toUpperCase()} Player Link</a>
+                            `).join('') : `<span class="meta">No supported links found.</span>`}
+                        </div>
+                        ${contentImages.length ? `
+                            <div class="detail-links">
+                                <div class="detail-meta">Images</div>
+                                <div class="detail-link-row">
+                                    ${contentImages.slice(0, 8).map(src => `<img class="thumb" src="${src}" alt="Post image" loading="lazy" style="height:120px;width:auto;border-radius:10px;" />`).join('')}
+                                </div>
+                            </div>
+                        ` : ``}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadDetail(postId) {
+            showStatus('Loading post...', true);
+            try {
+                const url = `https://serialmaza.xyz/wp-json/wp/v2/posts/${postId}?_embed=1`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const post = await res.json();
+                const rawLinks = extractLinksFromContent(post.content?.rendered || '');
+                const mapped = rawLinks.map(classifyLink).filter(Boolean);
+                const contentImages = extractImagesFromContent(post.content?.rendered || '');
+                hideStatus();
+                homeView.style.display = 'none';
+                detailView.style.display = 'block';
+                renderDetail(post, mapped, contentImages);
+            } catch (err) {
+                console.error(err);
+                showStatus('Failed to load post details.', false);
+            }
+        }
+
+
+        async function loadPage(page) {
+            if (state.loading) return;
+            state.loading = true;
+            showStatus('Loading latest posts...', true);
+            prevBtn.disabled = true;
+            nextBtn.disabled = true;
+
+            try {
+                const searchMode = Boolean(state.query);
+                const params = new URLSearchParams({
+                    per_page: searchMode ? 100 : state.perPage,
+                    page: searchMode ? 1 : page,
+                    _embed: '1'
+                });
+                if (searchMode) params.set('search', state.query);
+                const url = `https://serialmaza.xyz/wp-json/wp/v2/posts?${params.toString()}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const total = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
+                state.totalPages = searchMode ? 1 : (Number.isFinite(total) ? total : 1);
+                state.page = searchMode ? 1 : page;
+
+                const posts = await res.json();
+                state.lastPosts = posts;
+                renderPosts(posts);
+            } catch (err) {
+                console.error(err);
+                showStatus('Failed to load posts from WP JSON. Please try again.', false);
+                grid.innerHTML = '';
+            } finally {
+                state.loading = false;
+                pageInfo.textContent = `Page ${state.page} of ${state.totalPages}`;
+                prevBtn.disabled = state.page <= 1;
+                nextBtn.disabled = state.page >= state.totalPages;
+                if (pageInput) pageInput.value = String(state.page);
+                setSearchMode(Boolean(state.query));
+            }
+        }
+
+        function runSearch() {
+            state.query = (searchInput.value || '').trim();
+            state.page = 1;
+            loadPage(1);
+        }
+
+        function clearSearch() {
+            searchInput.value = '';
+            state.query = '';
+            state.startDate = '';
+            state.endDate = '';
+            state.page = 1;
+            loadPage(1);
+            if (startDateInput) startDateInput.value = '';
+        }
+
+        function applyDateFilter() {
+            state.startDate = (startDateInput.value || '').trim();
+            renderPosts(state.lastPosts || []);
+        }
+
+
+        function goToPage() {
+            const p = parseInt(pageInput.value, 10);
+            if (!p) return;
+            const target = Math.max(1, Math.min(state.totalPages, p));
+            loadPage(target);
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (state.page > 1) loadPage(state.page - 1);
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (state.page < state.totalPages) loadPage(state.page + 1);
+        });
+
+        searchBtn.addEventListener('click', runSearch);
+        clearBtn.addEventListener('click', clearSearch);
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') runSearch();
+        });
+
+
+        goBtn.addEventListener('click', goToPage);
+        pageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') goToPage();
+        });
+
+        calendarToggle.addEventListener('click', () => {
+            calendarPanel.classList.toggle('show');
+            if (calendarPanel.classList.contains('show') && startDateInput) {
+                startDateInput.focus();
+            }
+        });
+
+        startDateInput.addEventListener('change', applyDateFilter);
+
+        const params = new URLSearchParams(window.location.search);
+        const postId = params.get('post');
+        if (postId) {
+            loadDetail(postId);
+        } else {
+            loadPage(1);
+        }
+    </script>
+</body>
+
+</html>
