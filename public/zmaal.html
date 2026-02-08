@@ -411,18 +411,10 @@
 
         const EXTERNAL_CORS_PROXY = 'https://tv-4vo.pages.dev/api/proxy?extract=true&url=';
 
-        function proxyUrl(url) {
-            if (!url) return '';
-            if (url.includes('/api/proxy?')) return url;
-            return `/api/proxy?extract=true&url=${encodeURIComponent(url)}`;
-        }
-
         function buildFetchUrl(url) {
             if (!url) return '';
-            if (window.location.protocol === 'file:') {
-                return EXTERNAL_CORS_PROXY + encodeURIComponent(url);
-            }
-            return proxyUrl(url);
+            if (url.includes('/api/proxy?')) return url;
+            return EXTERNAL_CORS_PROXY + url;
         }
 
         async function getZmaalMP4(videoUrl) {
