@@ -31,7 +31,7 @@
 </div>
 
 <script>
-    const PROXY = "https://hotstar.ascalrack.workers.dev/?url="; // REPLACE WITH YOUR WORKER
+  
     const M3U_URL = "https://raw.githubusercontent.com/ascal-dev/matchlinks-jsontom3u/main/JTV-drm.m3u";
 
     let channels = [];
@@ -54,10 +54,7 @@
                 originalUri = base + originalUri;
             }
 
-            // 2. Wrap EVERYTHING in the proxy
-            if (!originalUri.startsWith(PROXY)) {
-                request.uris[0] = PROXY + originalUri;
-            }
+          
 
             // 3. Inject headers from the M3U metadata
             if (player.activeChannel && player.activeChannel.headers) {
