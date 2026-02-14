@@ -94,7 +94,7 @@
         // 1. Fetch Playlist
         async function loadPlaylist() {
             try {
-                const response = await fetch('https://raw.githubusercontent.com/fakeall12398-sketch/JIO_TV/main/jstar.m3u');
+                const response = await fetch('https://raw.githubusercontent.com/SDJJN/auto-m3u-bot/main/jtv.m3u');
                 const text = await response.text();
                 allChannels = parseM3U(text);
                 renderChannels(allChannels);
@@ -244,3 +244,4 @@
 </body>
 
 </html>
+
