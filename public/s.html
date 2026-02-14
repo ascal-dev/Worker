@@ -94,7 +94,7 @@
         // 1. Fetch Playlist
         async function loadPlaylist() {
             try {
-                const response = await fetch('https://raw.githubusercontent.com/a78521/MPD/main/BiGBoY');
+                const response = await fetch('https://raw.githubusercontent.com/ascal-dev/matchlinks-jsontom3u/main/final.m3u');
                 const text = await response.text();
                 allChannels = parseM3U(text);
                 renderChannels(allChannels);
