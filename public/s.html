@@ -3,217 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate DRM Player</title>
-    
+    <title>Universal DRM Player v2.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/controls.min.css">
-
     <style>
-        :root { --bg: #0a0a0a; --sidebar: #151515; --accent: #2196F3; }
-        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; overflow: hidden; }
-
-        /* Sidebar Styling */
-        #sidebar { width: 320px; background: var(--sidebar); display: flex; flex-direction: column; border-right: 1px solid #333; }
-        #header { padding: 20px; border-bottom: 1px solid #333; }
-        #search { width: 100%; padding: 10px; background: #222; border: 1px solid #444; border-radius: 5px; color: white; box-sizing: border-box; }
-        #channel-list { flex: 1; overflow-y: auto; }
-        
-        .channel-item { display: flex; align-items: center; padding: 12px; cursor: pointer; border-bottom: 1px solid #222; transition: 0.2s; }
-        .channel-item:hover { background: #252525; }
-        .channel-item.active { background: #1e3a5f; border-left: 4px solid var(--accent); }
-        .channel-item img { width: 50px; height: 35px; object-fit: contain; margin-right: 15px; background: #000; border-radius: 4px; }
-        .ch-info { display: flex; flex-direction: column; }
-        .ch-name { font-weight: bold; font-size: 14px; }
-        .ch-meta { font-size: 11px; color: #888; margin-top: 3px; }
-
-        /* Player Styling */
-        #main-content { flex: 1; position: relative; background: #000; display: flex; align-items: center; justify-content: center; }
-        #video-container { width: 100%; height: 100%; }
-        video { width: 100%; height: 100%; outline: none; }
-
-        /* Status & Errors */
-        #loader { position: absolute; z-index: 10; background: rgba(0,0,0,0.8); padding: 15px 30px; border-radius: 8px; display: none; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
+        #sidebar { width: 320px; background: #111; border-right: 1px solid #333; display: flex; flex-direction: column; }
+        #list { flex: 1; overflow-y: auto; padding: 10px; }
+        .item { padding: 12px; border-bottom: 1px solid #222; cursor: pointer; display: flex; align-items: center; border-radius: 4px; margin-bottom: 4px; }
+        .item:hover { background: #222; }
+        .item.active { background: #0078ff; }
+        .item img { width: 50px; height: 35px; object-fit: contain; margin-right: 12px; background: #000; }
+        #player-container { flex: 1; position: relative; background: #000; }
+        video { width: 100%; height: 100%; }
+        .search-container { padding: 15px; border-bottom: 1px solid #333; }
+        #search { width: 100%; padding: 10px; background: #222; border: 1px solid #444; color: white; border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <div id="header">
-        <h2 style="margin: 0 0 15px 0; font-size: 18px; color: var(--accent);">Live Stream Pro</h2>
-        <input type="text" id="search" placeholder="Search channels..." onkeyup="filterChannels()">
-    </div>
-    <div id="channel-list">
-        <div style="padding: 20px; text-align: center; color: #666;">Parsing Playlist...</div>
-    </div>
+    <div class="search-container"><input type="text" id="search" placeholder="Search TV Channels..." onkeyup="filter()"></div>
+    <div id="list">Loading Playlist...</div>
 </div>
 
-<div id="main-content">
-    <div id="loader">Loading Stream...</div>
-    <div id="video-container" data-shaka-player-container>
-        <video autoplay data-shaka-player id="video"></video>
-    </div>
+<div id="player-container" data-shaka-player-container>
+    <video autoplay id="video" data-shaka-player></video>
 </div>
 
 <script>
-    // --- CONFIGURATION ---
-    const M3U_URL = "https://raw.githubusercontent.com/ascal-dev/matchlinks-jsontom3u/main/JTV-drm.m3u";
-    const PROXY_BASE = "https://hotstar.ascalrack.workers.dev/?url=";
+    // EDIT THIS TO YOUR WORKER URL
+    const PROXY = "https://hotstar.ascalrack.workers.dev/?url=";
+    const M3U = "https://raw.githubusercontent.com/ascal-dev/matchlinks-jsontom3u/main/JTV-drm.m3u";
 
-    let allChannels = [];
-    let player = null;
-    let ui = null;
+    let channels = [];
+    let player, ui;
 
-    // --- INITIALIZATION ---
-    async function initApp() {
+    async function init() {
         shaka.polyfill.installAll();
-        if (!shaka.Player.isBrowserSupported()) {
-            alert('Browser not supported!');
-            return;
-        }
-
         const video = document.getElementById('video');
-        const container = document.getElementById('video-container');
         player = new shaka.Player(video);
-        ui = new shaka.ui.Overlay(player, container, video);
+        ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
 
-        // Error handling
-        player.addEventListener('error', (event) => {
-            console.error('Shaka Error:', event.detail);
-            document.getElementById('loader').innerText = "Error: " + event.detail.code;
+        // --- THE MASTER PROXY FILTER ---
+        player.getNetworkingEngine().registerRequestFilter((type, request) => {
+            let target = request.uris[0];
+            
+            // If the URL is already proxied, don't wrap it again
+            if (!target.startsWith(PROXY)) {
+                request.uris[0] = PROXY + encodeURIComponent(target);
+            }
+
+            // Inject headers from current channel metadata
+            const ch = player.currentChannelData;
+            if (ch && ch.headers) {
+                Object.keys(ch.headers).forEach(k => {
+                    request.headers[k] = ch.headers[k];
+                });
+            }
         });
 
-        await loadM3U();
+        const res = await fetch(M3U);
+        const text = await res.text();
+        channels = parseM3U(text);
+        render(channels);
     }
 
-    // --- M3U PARSER ---
-    async function loadM3U() {
-        try {
-            const response = await fetch(M3U_URL);
-            const data = await response.text();
-            allChannels = parseM3U(data);
-            renderList(allChannels);
-        } catch (err) {
-            console.error("M3U Load Fail:", err);
-            document.getElementById('channel-list').innerHTML = `<div style="padding:20px; color:red;">Failed to load playlist</div>`;
-        }
-    }
-
-    function parseM3U(content) {
-        const lines = content.split('\n');
-        const channels = [];
-        let current = null;
-
+    function parseM3U(data) {
+        const lines = data.split('\n');
+        const list = [];
+        let curr = null;
         lines.forEach(line => {
             line = line.trim();
             if (line.startsWith('#EXTINF:')) {
-                current = {
-                    name: line.split(',')[1] || "Unnamed",
-                    logo: (line.match(/tvg-logo="([^"]+)"/) || [])[1] || "",
-                    headers: {},
-                    kodi: {}
+                curr = { 
+                    name: line.split(',')[1], 
+                    logo: (line.match(/tvg-logo="([^"]+)"/) || [])[1],
+                    headers: {}, kodi: {} 
                 };
             } else if (line.startsWith('#EXTHTTP:')) {
-                try { current.headers = JSON.parse(line.replace('#EXTHTTP:', '')); } catch(e){}
+                try { curr.headers = JSON.parse(line.replace('#EXTHTTP:', '')); } catch(e){}
             } else if (line.startsWith('#KODIPROP:')) {
-                const [key, ...val] = line.replace('#KODIPROP:', '').split('=');
-                current.kodi[key.trim()] = val.join('=').trim();
+                const [k, v] = line.replace('#KODIPROP:', '').split('=');
+                curr.kodi[k.trim()] = v.trim();
             } else if (line.startsWith('http')) {
-                current.url = line;
-                channels.push(current);
+                curr.url = line;
+                list.push(curr);
+                curr = null;
             }
         });
-        return channels;
+        return list;
     }
 
-    // --- UI RENDERING ---
-    function renderList(list) {
-        const container = document.getElementById('channel-list');
-        container.innerHTML = list.map((ch, idx) => `
-            <div class="channel-item" onclick="playChannel(${idx})">
-                <img src="${ch.logo}" onerror="this.src='https://via.placeholder.com/50x35?text=TV'">
-                <div class="ch-info">
-                    <span class="ch-name">${ch.name}</span>
-                    <span class="ch-meta">${ch.url.includes('.mpd') ? 'DASH' : 'HLS'} | DRM Protection</span>
-                </div>
+    function render(data) {
+        document.getElementById('list').innerHTML = data.map((ch, i) => `
+            <div class="item" onclick="playChannel(${i}, this)">
+                <img src="${ch.logo}">
+                <span>${ch.name}</span>
             </div>
         `).join('');
     }
 
-    function filterChannels() {
-        const term = document.getElementById('search').value.toLowerCase();
-        const items = document.querySelectorAll('.channel-item');
-        items.forEach(item => {
-            item.style.display = item.innerText.toLowerCase().includes(term) ? 'flex' : 'none';
-        });
-    }
+    async function playChannel(idx, el) {
+        const ch = channels[idx];
+        player.currentChannelData = ch; // Store for the request filter
 
-    // --- PLAYBACK ENGINE ---
-    async function playChannel(idx) {
-        const ch = allChannels[idx];
-        const loader = document.getElementById('loader');
-        
-        // UI State
-        document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.channel-item')[idx].classList.add('active');
-        loader.style.display = 'block';
-        loader.innerText = "Decrypting & Buffering...";
+        document.querySelectorAll('.item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
 
-        // 1. DRM KEY EXTRACTION (Handles URLs and Hex)
+        // DRM Setup
         let clearKeys = {};
-        const licenseKey = ch.kodi['inputstream.adaptive.license_key'];
-
-        if (licenseKey) {
-            if (licenseKey.startsWith('http')) {
-                try {
-                    const urlObj = new URL(licenseKey);
-                    const kid = urlObj.searchParams.get('keyid');
-                    const key = urlObj.searchParams.get('key');
-                    if (kid && key) clearKeys[kid] = key;
-                } catch(e) {}
-            } else if (licenseKey.includes(':')) {
-                const parts = licenseKey.split(':');
-                clearKeys[parts[0]] = parts[1];
+        const lKey = ch.kodi['inputstream.adaptive.license_key'];
+        if (lKey) {
+            if (lKey.includes('keyid=')) {
+                const u = new URL(lKey);
+                clearKeys[u.searchParams.get('keyid')] = u.searchParams.get('key');
+            } else if (lKey.includes(':')) {
+                const p = lKey.split(':');
+                clearKeys[p[0]] = p[1];
             }
         }
 
-        // 2. PLAYER CONFIGURATION
         player.configure({
             drm: { clearKeys: clearKeys },
-            streaming: {
-                bufferingGoal: 30,
-                rebufferingGoal: 2,
-                alwaysStreamText: true
-            }
+            streaming: { lowLatencyMode: true, jumpLargeGaps: true }
         });
 
-        // 3. PROXY & HEADER INJECTION
-        player.getNetworkingEngine().clearAllRequestFilters();
-        player.getNetworkingEngine().registerRequestFilter((type, request) => {
-            // Add custom headers from M3U (Cookies, User-Agent, etc.)
-            if (ch.headers) {
-                Object.keys(ch.headers).forEach(key => {
-                    request.headers[key] = ch.headers[key];
-                });
-            }
-
-            // Universal Proxy Routing: Prepend proxy to every segment/manifest call
-            if (!request.uris[0].startsWith(PROXY_BASE)) {
-                request.uris[0] = PROXY_BASE + encodeURIComponent(request.uris[0]);
-            }
-        });
-
-        // 4. LOAD
         try {
+            // Load through proxy initially
             await player.load(ch.url);
-            loader.style.display = 'none';
         } catch (e) {
-            loader.innerText = "Stream Offline (Error " + e.code + ")";
-            console.error("Load Error", e);
+            console.error("Playback failed", e);
         }
     }
 
-    document.addEventListener('DOMContentLoaded', initApp);
-</script>
+    function filter() {
+        const q = document.getElementById('search').value.toLowerCase();
+        document.querySelectorAll('.item').forEach(item => {
+            item.style.display = item.innerText.toLowerCase().includes(q) ? 'flex' : 'none';
+        });
+    }
 
+    document.addEventListener('DOMContentLoaded', init);
+</script>
 </body>
 </html>
