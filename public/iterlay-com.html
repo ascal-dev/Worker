@@ -324,7 +324,7 @@
             // 1) API already has TeraBox URL
             if (v.terabox_url) {
                 localStorage.setItem("sharedTeraboxUrlfromiterplay", v.terabox_url);
-                window.location.href = "https://tv-4vo.pages.dev/bypasstera.html";
+                window.location.href = "https://sdjjn.pages.dev/bypasstera.html";
                 return;
             }
 
@@ -333,7 +333,7 @@
                 fetchViralPremiumTeraBoxUrl(v.id)
                     .then(url => {
                         localStorage.setItem("sharedTeraboxUrl", url);
-                        window.location.href = "https://tv-4vo.pages.dev/bypasstera.html";
+                        window.location.href = "https://sdjjn.pages.dev/bypasstera.html";
                     })
                     .catch(() => alert("Failed to extract TeraBox link"));
                 return;
@@ -352,5 +352,6 @@
     </script>
 
 </body>
+
 
 </html>
