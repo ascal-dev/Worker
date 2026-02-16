@@ -142,9 +142,9 @@
 <body>
 
     <div class="nav">
+         <button onclick="switchTab('trending',this)">Trending</button>
         <button class="active" onclick="switchTab('all',this)">All</button>
         <button onclick="switchTab('viral',this)">Viral</button>
-        <button onclick="switchTab('trending',this)">Trending</button>
         <button onclick="switchTab('recent',this)">Recent</button>
     </div>
 
@@ -172,7 +172,7 @@
         };
 
         /* ================= STATE ================= */
-        var currentTab = "all";
+        var currentTab = "trending";
         var offset = 0;
         var videos = [];
 
@@ -355,3 +355,4 @@
 
 
 </html>
+
