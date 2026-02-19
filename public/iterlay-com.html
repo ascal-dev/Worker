@@ -121,6 +121,34 @@ transition:.3s;
 }
 .toast.show{opacity:1;}
 .loading{text-align:center;padding:30px;color:#aaa;}
+  /* ======= MOBILE FIX FOR SAVED LINKS ======= */
+@media (max-width: 600px) {
+  .saved-section {
+    padding: 0 5px;
+  }
+  .saved-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 8px;
+  }
+  .saved-item img {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    object-fit: cover;
+  }
+  .saved-title {
+    font-size: 14px;
+    overflow: visible;
+    width: 100%;
+  }
+  .saved-item button {
+    width: 100%;
+    margin-top: 4px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -410,3 +438,4 @@ document.addEventListener("DOMContentLoaded",()=>App.init());
 </script>
 </body>
 </html>
+
