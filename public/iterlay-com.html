@@ -3,18 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IteraPlay Ultimate Final</title>
+<title>IteraPlay Ultimate Stable with Clear Storage</title>
 
 <style>
 :root{
 --bg:#0f0f0f;
 --card:#1b1b1b;
 --accent:#00e676;
---blue:#2979ff;
 --orange:#ff9100;
 --danger:#ff4444;
 --text:#ffffff;
---muted:#aaaaaa;
 --gold:linear-gradient(45deg,gold,orange);
 }
 
@@ -69,6 +67,7 @@ cursor:pointer;
 .play{background:var(--accent);color:black;}
 .redirect{background:var(--orange);color:black;}
 .remove{background:var(--danger);color:white;}
+.clear-all{background:#ff5555;color:white;margin-bottom:6px;}
 
 .pagination{display:flex;justify-content:center;gap:6px;margin-top:18px;flex-wrap:wrap;}
 .pagination button{padding:6px 10px;border:0;border-radius:6px;background:#2c2c2c;color:white;cursor:pointer;}
@@ -76,9 +75,38 @@ cursor:pointer;
 .pagination input{width:60px;padding:5px;border-radius:6px;border:0;text-align:center;}
 
 .saved-section{margin-top:30px;}
-.saved-item{display:flex;align-items:center;gap:8px;background:#181818;padding:6px;border-radius:8px;margin-bottom:6px;}
-.saved-item img{width:55px;height:55px;object-fit:contain;background:black;border-radius:6px;}
-.saved-title{flex:1;font-size:12px;overflow:hidden;}
+.saved-item{
+display:flex;
+align-items:center;
+gap:8px;
+background:#181818;
+padding:6px;
+border-radius:8px;
+margin-bottom:6px;
+}
+
+.saved-item img{
+width:55px;
+height:55px;
+object-fit:contain;
+background:black;
+border-radius:6px;
+}
+
+.saved-title{
+flex:1;
+font-size:12px;
+overflow:hidden;
+}
+
+.saved-premium{
+background:var(--gold);
+color:black;
+font-size:10px;
+padding:2px 6px;
+border-radius:4px;
+font-weight:bold;
+}
 
 .toast{
 position:fixed;
@@ -92,7 +120,7 @@ opacity:0;
 transition:.3s;
 }
 .toast.show{opacity:1;}
-.loading{text-align:center;padding:30px;color:var(--muted);}
+.loading{text-align:center;padding:30px;color:#aaa;}
 </style>
 </head>
 <body>
@@ -118,13 +146,13 @@ transition:.3s;
 
 <div class="saved-section">
 <h2>Saved Links</h2>
+<button class="btn clear-all" onclick="App.clearAllSaved()">Delete All Saved Links</button>
 <div id="savedContainer"></div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-
 const App={
 
 CONFIG:{
@@ -143,7 +171,13 @@ trending:{url:"https://iteraplay.com/api/get-trending-videos.php",mode:"encrypte
 viral:{url:"https://iteraplay.com/api/get-viral-videos.php",mode:"auto"}
 },
 
-init(){this.load();this.renderSaved();},
+init(){
+if(!localStorage.getItem("savedLinks")){
+localStorage.setItem("savedLinks","[]");
+}
+this.load();
+this.renderSaved();
+},
 
 toast(msg){
 const t=document.getElementById("toast");
@@ -187,7 +221,6 @@ document.getElementById("grid").innerHTML="<div class='loading'>Loading...</div>
 let api=this.API[this.STATE.tab];
 let offset=(this.STATE.page-1)*this.CONFIG.LIMIT;
 let url=api.url+"?offset="+offset+"&limit="+this.CONFIG.LIMIT+"&reset_seed=true";
-
 let raw=await this.fetchData(url,api.mode);
 
 this.STATE.videos=raw.map(v=>({
@@ -206,7 +239,7 @@ this.renderPagination();
 
 bestLink(v){return v.terabox_url||v.custom_url||v.player_url||"";},
 
-setBypassStorage(link){
+setBypass(link){
 localStorage.setItem("sharedTeraboxUrl",link);
 localStorage.setItem("sharedTeraboxUrlfromiterplay",link);
 },
@@ -242,34 +275,36 @@ g.appendChild(card);
 });
 },
 
-renderPagination(){
-let container=document.getElementById("pageNumbers");
+renderSaved(){
+let container=document.getElementById("savedContainer");
 container.innerHTML="";
-for(let i=Math.max(1,this.STATE.page-2);i<=this.STATE.page+2;i++){
-let b=document.createElement("button");
-b.innerText=i;
-if(i===this.STATE.page) b.classList.add("active");
-b.onclick=()=>{this.STATE.page=i;this.load();}
-container.appendChild(b);
+let saved=JSON.parse(localStorage.getItem("savedLinks"));
+
+saved.forEach((s,index)=>{
+let div=document.createElement("div");
+div.className="saved-item";
+
+let html=`<img src="${s.thumbnail}">
+<div class="saved-title">${s.title}</div>`;
+
+if(s.is_premium){
+html+=`<span class="saved-premium">PREMIUM</span>`;
 }
-},
 
-nextPage(){this.STATE.page++;this.load();},
-prevPage(){if(this.STATE.page>1){this.STATE.page--;this.load();}},
-jumpPage(){
-let p=parseInt(document.getElementById("jumpInput").value);
-if(p>0){this.STATE.page=p;this.load();}
-},
+if(!s.link.includes("terabox")){
+html+=`<button class="btn play" onclick="App.playSaved(${index})">Play</button>`;
+}
 
-copy(i){
-let link=this.bestLink(this.STATE.videos[i]);
-if(!link)return this.toast("No link");
-navigator.clipboard.writeText(link);
-this.toast("Copied!");
+html+=`<button class="btn redirect" onclick="App.redirectSaved(${index})">Bypass</button>
+<button class="btn remove" onclick="App.removeSaved(${index})">X</button>`;
+
+div.innerHTML=html;
+container.appendChild(div);
+});
 },
 
 save(i){
-let saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
+let saved=JSON.parse(localStorage.getItem("savedLinks"));
 let v=this.STATE.videos[i];
 let link=this.bestLink(v);
 if(!link)return this.toast("No link");
@@ -288,65 +323,47 @@ this.renderSaved();
 this.toast("Saved!");
 },
 
-renderSaved(){
-let container=document.getElementById("savedContainer");
-container.innerHTML="";
-let saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
-
-saved.forEach((s,index)=>{
-let div=document.createElement("div");
-div.className="saved-item";
-
-let html=`<img src="${s.thumbnail}">`;
-
-if(s.is_premium)
-html+=`<div class="premium-badge" style="position:static;">PREMIUM</div>`;
-
-html+=`<div class="saved-title">${s.title}</div>`;
-
-if(!s.link.includes("terabox")){
-html+=`<button class="btn play" onclick="App.playSaved(${index})">Play</button>`;
-}
-
-html+=`<button class="btn redirect" onclick="App.redirectSaved(${index})">Bypass</button>
-<button class="btn remove" onclick="App.removeSaved(${index})">X</button>`;
-
-div.innerHTML=html;
-container.appendChild(div);
-});
-},
-
 removeSaved(i){
-let saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
+let saved=JSON.parse(localStorage.getItem("savedLinks"));
 saved.splice(i,1);
 localStorage.setItem("savedLinks",JSON.stringify(saved));
 this.renderSaved();
 this.toast("Removed");
 },
 
+clearAllSaved(){
+localStorage.setItem("savedLinks","[]");
+this.renderSaved();
+this.toast("All saved links deleted!");
+},
+
 redirect(i){
 let link=this.bestLink(this.STATE.videos[i]);
 if(!link)return this.toast("No link");
-this.setBypassStorage(link);
+this.setBypass(link);
 window.location.href=this.CONFIG.BYPASS_URL;
 },
 
 redirectSaved(i){
-let saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
-let link=saved[i].link;
-this.setBypassStorage(link);
+let saved=JSON.parse(localStorage.getItem("savedLinks"));
+this.setBypass(saved[i].link);
 window.location.href=this.CONFIG.BYPASS_URL;
+},
+
+copy(i){
+let link=this.bestLink(this.STATE.videos[i]);
+if(!link)return this.toast("No link");
+navigator.clipboard.writeText(link);
+this.toast("Copied!");
 },
 
 async play(i){
 let v=this.STATE.videos[i];
-
 if(v.player_url){
-document.getElementById("player").src=v.player_url;
-document.getElementById("player").play();
+player.src=v.player_url;
+player.play();
 return;
 }
-
 if(!v.custom_url)return this.toast("No playable link");
 
 let r=await fetch("https://iteraplay.com/s/watch.php?url="+encodeURIComponent(v.custom_url));
@@ -355,24 +372,41 @@ let m=h.match(/https:\/\/pub-[^'"]+\.mp4/);
 
 if(m){
 v.player_url=m[0];
-document.getElementById("player").src=m[0];
-document.getElementById("player").play();
+player.src=m[0];
+player.play();
 }else{
 this.toast("Video not found");
 }
 },
 
 playSaved(i){
-let saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
-let link=saved[i].link;
-document.getElementById("player").src=link;
-document.getElementById("player").play();
+let saved=JSON.parse(localStorage.getItem("savedLinks"));
+player.src=saved[i].link;
+player.play();
+},
+
+renderPagination(){
+let container=document.getElementById("pageNumbers");
+container.innerHTML="";
+for(let i=Math.max(1,this.STATE.page-2);i<=this.STATE.page+2;i++){
+let b=document.createElement("button");
+b.innerText=i;
+if(i===this.STATE.page)b.classList.add("active");
+b.onclick=()=>{this.STATE.page=i;this.load();}
+container.appendChild(b);
+}
+},
+
+nextPage(){this.STATE.page++;this.load();},
+prevPage(){if(this.STATE.page>1){this.STATE.page--;this.load();}},
+jumpPage(){
+let p=parseInt(document.getElementById("jumpInput").value);
+if(p>0){this.STATE.page=p;this.load();}
 }
 
 };
 
 document.addEventListener("DOMContentLoaded",()=>App.init());
-
 </script>
 </body>
 </html>
