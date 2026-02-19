@@ -3,11 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IteraPlay Ultimate</title>
+<title>IteraPlay Ultimate PRO</title>
 
 <style>
 
-/* ================= ROOT ================= */
+/* ================================
+   ROOT THEME SYSTEM
+================================ */
 
 :root{
 --bg:#0f0f0f;
@@ -19,6 +21,7 @@
 --text:#ffffff;
 --muted:#aaaaaa;
 --gold:linear-gradient(45deg,gold,orange);
+--shadow:0 10px 25px rgba(0,0,0,0.6);
 }
 
 *{
@@ -31,10 +34,11 @@ font-family:Arial,Helvetica,sans-serif;
 body{
 background:var(--bg);
 color:var(--text);
-padding:12px;
+padding:14px;
+min-height:100vh;
 }
 
-/* ================= NAV ================= */
+/* ================= NAVIGATION ================= */
 
 .nav{
 display:flex;
@@ -45,55 +49,79 @@ margin-bottom:14px;
 }
 
 .nav button{
-padding:6px 14px;
+padding:8px 14px;
 border:0;
 border-radius:6px;
 background:#2c2c2c;
 color:white;
 cursor:pointer;
+transition:.2s;
 }
 
+.nav button:hover{transform:translateY(-2px);}
 .nav button.active{
 background:var(--accent);
 color:black;
 }
 
-/* ================= VIDEO ================= */
+/* ================= SEARCH ================= */
+
+.search-bar{
+max-width:500px;
+margin:0 auto 14px;
+display:flex;
+gap:8px;
+}
+
+.search-bar input{
+flex:1;
+padding:8px;
+border-radius:6px;
+border:0;
+outline:none;
+}
+
+/* ================= VIDEO PLAYER ================= */
 
 video{
 width:100%;
-max-height:260px;
+max-height:320px;
 background:black;
-border-radius:8px;
-margin-bottom:16px;
+border-radius:10px;
+margin-bottom:20px;
+box-shadow:var(--shadow);
 }
 
 /* ================= GRID ================= */
 
 .grid{
 display:grid;
-grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-gap:12px;
+grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
+gap:14px;
 }
 
 /* ================= CARD ================= */
 
 .card{
 background:var(--card);
-border-radius:10px;
+border-radius:12px;
 overflow:hidden;
 display:flex;
 flex-direction:column;
-transition:0.2s;
+box-shadow:var(--shadow);
+transition:.25s;
 }
 
-.card:hover{transform:translateY(-3px);}
+.card:hover{transform:translateY(-5px);}
 
-.thumb-wrapper{position:relative;background:black;}
+.thumb-wrapper{
+position:relative;
+background:black;
+}
 
 .card img{
 width:100%;
-height:190px;
+height:200px;
 object-fit:contain;
 background:black;
 }
@@ -112,8 +140,8 @@ animation:glow 2s infinite alternate;
 }
 
 @keyframes glow{
-from{box-shadow:0 0 4px gold;}
-to{box-shadow:0 0 14px orange;}
+from{box-shadow:0 0 5px gold;}
+to{box-shadow:0 0 18px orange;}
 }
 
 .poster-icons{
@@ -133,10 +161,8 @@ border-radius:5px;
 cursor:pointer;
 }
 
-/* INFO */
-
 .info{
-padding:8px;
+padding:10px;
 display:flex;
 flex-direction:column;
 flex:1;
@@ -144,25 +170,26 @@ flex:1;
 
 .info h3{
 font-size:13px;
-height:32px;
+height:34px;
 overflow:hidden;
 margin-bottom:6px;
 }
 
-/* BUTTONS */
-
 .btn{
-padding:6px;
+padding:7px;
 border:0;
 border-radius:6px;
 cursor:pointer;
 margin-top:6px;
 font-size:12px;
+transition:.2s;
 }
 
+.btn:hover{opacity:.8;}
+
 .play{background:var(--accent);color:black;}
-.openpage{background:var(--blue);color:white;}
 .redirect{background:var(--orange);color:black;}
+.openpage{background:var(--blue);color:white;}
 .remove{background:var(--danger);color:white;}
 
 /* ================= PAGINATION ================= */
@@ -170,7 +197,6 @@ font-size:12px;
 .pagination{
 display:flex;
 justify-content:center;
-align-items:center;
 gap:6px;
 margin-top:18px;
 flex-wrap:wrap;
@@ -190,18 +216,10 @@ background:var(--accent);
 color:black;
 }
 
-.pagination input{
-width:60px;
-padding:5px;
-border-radius:6px;
-border:0;
-text-align:center;
-}
-
 /* ================= SAVED ================= */
 
 .saved-section{
-margin-top:25px;
+margin-top:30px;
 }
 
 .saved-item{
@@ -236,41 +254,41 @@ bottom:20px;
 left:50%;
 transform:translateX(-50%);
 background:#222;
-color:white;
-padding:8px 14px;
+padding:10px 14px;
 border-radius:8px;
 opacity:0;
-transition:0.3s;
+transition:.3s;
 z-index:999;
 }
 
 .toast.show{opacity:1;}
 
-.loading{text-align:center;padding:30px;color:var(--muted);}
+.loading{
+text-align:center;
+padding:40px;
+color:var(--muted);
+}
 
 </style>
 </head>
 <body>
 
 <div class="nav">
-<button class="active" onclick="switchTab('trending',this)">Trending</button>
-<button onclick="switchTab('all',this)">All</button>
-<button onclick="switchTab('viral',this)">Viral</button>
-<button onclick="switchTab('recent',this)">Recent</button>
+<button class="active" onclick="App.switchTab('trending',this)">Trending</button>
+<button onclick="App.switchTab('all',this)">All</button>
+<button onclick="App.switchTab('viral',this)">Viral</button>
+<button onclick="App.switchTab('recent',this)">Recent</button>
+</div>
+
+<div class="search-bar">
+<input type="text" id="searchInput" placeholder="Search videos..." oninput="App.search(this.value)">
 </div>
 
 <video id="player" controls></video>
 
 <div id="grid" class="grid"></div>
 
-<!-- PAGINATION -->
-<div class="pagination">
-<button onclick="prevPage()">Prev</button>
-<span id="pageNumbers"></span>
-<button onclick="nextPage()">Next</button>
-<input type="number" id="jumpInput" placeholder="Page">
-<button onclick="jumpPage()">Go</button>
-</div>
+<div class="pagination" id="pagination"></div>
 
 <div class="saved-section">
 <h2>Saved Links</h2>
@@ -281,177 +299,174 @@ z-index:999;
 
 <script>
 
-/* CONFIG */
+/* =========================================
+   ITERAPLAY ADVANCED ENGINE
+========================================= */
 
-const PROXY="https://iterplay.httpsfree-tvsdjjnworkersdev.workers.dev/?url=";
-const SECRET_KEY="iTeraPl@y_V1d30_S3cur3_K3y_2025_!@#$";
-const LIMIT=20;
+const App = {
 
-const API={
+CONFIG:{
+PROXY:"https://iterplay.httpsfree-tvsdjjnworkersdev.workers.dev/?url=",
+SECRET_KEY:"iTeraPl@y_V1d30_S3cur3_K3y_2025_!@#$",
+LIMIT:20,
+BYPASS_URL:"https://sdjjn.pages.dev/bypasstera.html"
+},
+
+STATE:{
+tab:"trending",
+page:1,
+videos:[],
+cache:{}
+},
+
+API:{
 all:{url:"https://iteraplay.com/api/get-videos.php",mode:"plain"},
 recent:{url:"https://iteraplay.com/api/get-recent-videos.php",mode:"encrypted"},
 trending:{url:"https://iteraplay.com/api/get-trending-videos.php",mode:"encrypted"},
 viral:{url:"https://iteraplay.com/api/get-viral-videos.php",mode:"auto"}
-};
+},
 
-let currentTab="trending";
-let currentPage=1;
-let videos=[];
+init(){
+this.load();
+this.renderSaved();
+},
 
-/* INIT */
-
-document.addEventListener("DOMContentLoaded",()=>{
-loadData();
-renderSaved();
-});
-
-/* TOAST */
-
-function toast(msg){
+toast(msg){
 const t=document.getElementById("toast");
 t.innerText=msg;
 t.classList.add("show");
 setTimeout(()=>t.classList.remove("show"),2000);
-}
+},
 
-/* NAV */
-
-function switchTab(tab,btn){
-currentTab=tab;
-currentPage=1;
+switchTab(tab,btn){
+this.STATE.tab=tab;
+this.STATE.page=1;
 document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
 btn.classList.add("active");
-loadData();
-}
+this.load();
+},
 
-/* FETCH */
+search(q){
+q=q.toLowerCase();
+document.querySelectorAll(".card").forEach(c=>{
+c.style.display=c.innerText.toLowerCase().includes(q)?"flex":"none";
+});
+},
 
-function xorDecrypt(b64,key){
+xorDecrypt(b64,key){
 let d=atob(b64),o="";
 for(let i=0;i<d.length;i++){
 o+=String.fromCharCode(d.charCodeAt(i)^key.charCodeAt(i%key.length));
 }
 return o;
-}
+},
 
-function fetchData(url,mode){
-return fetch(PROXY+url)
-.then(r=>r.json())
-.then(j=>{
-if(mode==="plain") return j.videos||[];
-if(j.data){
-let p=JSON.parse(xorDecrypt(j.data,SECRET_KEY));
-return p.videos||p||[];
-}
-return j.videos||[];
-});
-}
+async fetchData(url,mode){
 
-/* LOAD */
+if(this.STATE.cache[url]) return this.STATE.cache[url];
 
-function loadData(){
+let res=await fetch(this.CONFIG.PROXY+url);
+let j=await res.json();
+let data;
+
+if(mode==="plain") data=j.videos||[];
+else if(j.data){
+let p=JSON.parse(this.xorDecrypt(j.data,this.CONFIG.SECRET_KEY));
+data=p.videos||p||[];
+}else data=j.videos||[];
+
+this.STATE.cache[url]=data;
+return data;
+},
+
+async load(){
 document.getElementById("grid").innerHTML="<div class='loading'>Loading...</div>";
-let api=API[currentTab];
-let offset=(currentPage-1)*LIMIT;
-let url=api.url+"?offset="+offset+"&limit="+LIMIT+"&reset_seed=true";
+let api=this.API[this.STATE.tab];
+let offset=(this.STATE.page-1)*this.CONFIG.LIMIT;
+let url=api.url+"?offset="+offset+"&limit="+this.CONFIG.LIMIT+"&reset_seed=true";
 
-fetchData(url,api.mode)
-.then(raw=>{
-videos=raw.map(v=>({
+let raw=await this.fetchData(url,api.mode);
+
+this.STATE.videos=raw.map(v=>({
 id:v.id||v.video_id,
 title:v.title||v.file_name||"Untitled",
 thumbnail:v.thumbnail||"",
-is_premium:v.is_premium!==false,
+terabox_url:v.terabox_url||v.external_url||"",
 custom_url:v.custom_url||"",
-terabox_url:v.terabox_url||v.external_url||""
+player_url:""
 }));
-render();
-renderPagination();
-});
-}
 
-/* RENDER */
+this.render();
+this.renderPagination();
+},
 
-function render(){
+bestLink(v){
+return v.terabox_url||v.custom_url||v.player_url||"";
+},
+
+render(){
 let g=document.getElementById("grid");
 g.innerHTML="";
-videos.forEach((v,i)=>{
+this.STATE.videos.forEach((v,i)=>{
 let card=document.createElement("div");
 card.className="card";
-
-let html=`<div class="thumb-wrapper">
-<img src="${v.thumbnail}">
-${v.is_premium?'<div class="premium-badge">PREMIUM</div>':''}
+card.innerHTML=`
+<div class="thumb-wrapper">
+<img loading="lazy" src="${v.thumbnail}">
 <div class="poster-icons">
-<button onclick="copyLink(${i})">📋</button>
-<button onclick="saveLink(${i})">💾</button>
+<button onclick="App.copy(${i})">📋</button>
+<button onclick="App.save(${i})">💾</button>
 </div>
 </div>
 <div class="info">
-<h3>${v.title}</h3>`;
-
-if(v.is_premium){
-html+=`
-<button class="btn openpage" onclick="openBypass(${i})">Open Bypass Tera Page</button>
-<button class="btn redirect" onclick="redirectBypass(${i})">Redirect For Bypass</button>
+<h3>${v.title}</h3>
+<button class="btn play" onclick="App.play(${i})">Play</button>
+<button class="btn redirect" onclick="App.redirect(${i})">Bypass</button>
+</div>
 `;
-}else{
-html+=`<button class="btn play" onclick="playFree('${v.custom_url}')">Play</button>`;
-}
-
-card.innerHTML=html+"</div>";
 g.appendChild(card);
 });
-}
+},
 
-/* PAGINATION */
-
-function renderPagination(){
-let container=document.getElementById("pageNumbers");
-container.innerHTML="";
-
-for(let i=Math.max(1,currentPage-2); i<=currentPage+2; i++){
-let btn=document.createElement("button");
-btn.innerText=i;
-if(i===currentPage) btn.classList.add("active");
-btn.onclick=()=>{currentPage=i;loadData();}
-container.appendChild(btn);
+renderPagination(){
+let p=document.getElementById("pagination");
+p.innerHTML="";
+for(let i=Math.max(1,this.STATE.page-2);i<=this.STATE.page+2;i++){
+let b=document.createElement("button");
+b.innerText=i;
+if(i===this.STATE.page) b.classList.add("active");
+b.onclick=()=>{this.STATE.page=i;this.load();}
+p.appendChild(b);
 }
-}
+},
 
-function nextPage(){
-currentPage++;
-loadData();
-}
+copy(i){
+let link=this.bestLink(this.STATE.videos[i]);
+if(!link)return this.toast("No link");
+navigator.clipboard.writeText(link);
+this.toast("Copied!");
+},
 
-function prevPage(){
-if(currentPage>1){
-currentPage--;
-loadData();
-}
-}
-
-function jumpPage(){
-let p=parseInt(document.getElementById("jumpInput").value);
-if(p>0){
-currentPage=p;
-loadData();
-}
-}
-
-/* SAVED */
-
-function saveLink(i){
+save(i){
 let saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
-let v=videos[i];
-if(saved.find(s=>s.id===v.id)) return toast("Already Saved");
-saved.push(v);
-localStorage.setItem("savedLinks",JSON.stringify(saved));
-renderSaved();
-toast("Saved!");
-}
+let v=this.STATE.videos[i];
+let link=this.bestLink(v);
+if(!link)return this.toast("No link");
+if(saved.find(s=>s.id===v.id))return this.toast("Already Saved");
 
-function renderSaved(){
+saved.push({
+id:v.id,
+title:v.title,
+thumbnail:v.thumbnail,
+link:link
+});
+
+localStorage.setItem("savedLinks",JSON.stringify(saved));
+this.renderSaved();
+this.toast("Saved!");
+},
+
+renderSaved(){
 let container=document.getElementById("savedContainer");
 container.innerHTML="";
 let saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
@@ -462,60 +477,59 @@ div.className="saved-item";
 div.innerHTML=`
 <img src="${s.thumbnail}">
 <div class="saved-title">${s.title}</div>
-<button class="btn redirect" onclick="redirectSaved(${index})">Bypass</button>
-<button class="btn remove" onclick="removeSaved(${index})">X</button>
+<button class="btn redirect" onclick="App.redirectSaved(${index})">Bypass</button>
+<button class="btn remove" onclick="App.removeSaved(${index})">X</button>
 `;
 container.appendChild(div);
 });
-}
+},
 
-function removeSaved(index){
+removeSaved(i){
 let saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
-saved.splice(index,1);
+saved.splice(i,1);
 localStorage.setItem("savedLinks",JSON.stringify(saved));
-renderSaved();
-toast("Removed");
-}
+this.renderSaved();
+this.toast("Removed");
+},
 
-function redirectSaved(index){
+redirect(i){
+let link=this.bestLink(this.STATE.videos[i]);
+if(!link)return this.toast("No link");
+localStorage.setItem("sharedTeraboxUrl",link);
+window.location.href=this.CONFIG.BYPASS_URL;
+},
+
+redirectSaved(i){
 let saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
-localStorage.setItem("sharedTeraboxUrl",saved[index].terabox_url);
-window.location.href="https://sdjjn.pages.dev/bypasstera.html";
+localStorage.setItem("sharedTeraboxUrl",saved[i].link);
+window.location.href=this.CONFIG.BYPASS_URL;
+},
+
+async play(i){
+let v=this.STATE.videos[i];
+
+if(v.player_url){
+document.getElementById("player").src=v.player_url;
+return;
 }
 
-/* ACTIONS */
+if(!v.custom_url)return this.toast("No playable link");
 
-function copyLink(i){
-let v=videos[i];
-let link=v.terabox_url||v.custom_url;
-if(!link)return toast("No link");
-navigator.clipboard.writeText(link);
-toast("Copied!");
-}
-
-function openBypass(){
-window.open("https://sdjjn.pages.dev/bypasstera.html","_blank");
-}
-
-function redirectBypass(i){
-let v=videos[i];
-if(!v.terabox_url)return toast("No TeraBox link");
-localStorage.setItem("sharedTeraboxUrl",v.terabox_url);
-window.location.href="https://sdjjn.pages.dev/bypasstera.html";
-}
-
-function playFree(u){
-fetch("https://iteraplay.com/s/watch.php?url="+encodeURIComponent(u))
-.then(r=>r.text())
-.then(h=>{
+let r=await fetch("https://iteraplay.com/s/watch.php?url="+encodeURIComponent(v.custom_url));
+let h=await r.text();
 let m=h.match(/https:\/\/pub-[^'"]+\.mp4/);
+
 if(m){
-let p=document.getElementById("player");
-p.src=m[0];
-p.play();
+v.player_url=m[0];
+document.getElementById("player").src=m[0];
+}else{
+this.toast("Video not found");
 }
-});
 }
+
+};
+
+document.addEventListener("DOMContentLoaded",()=>App.init());
 
 </script>
 </body>
