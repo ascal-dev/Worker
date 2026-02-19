@@ -2,48 +2,132 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>IteraPlay</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IteraPlay Advanced</title>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
-body{background:#0f0f0f;color:#fff;padding:10px}
 
-/* NAV */
-.nav{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
-.nav button{padding:6px 14px;border:0;border-radius:4px;background:#333;color:#fff;cursor:pointer}
-.nav button.active{background:#00c853;color:#000}
+/* ================= ROOT ================= */
 
-/* VIDEO */
-video{width:100%;max-height:240px;background:#000;margin-bottom:12px}
+:root{
+--bg:#0f0f0f;
+--card:#1b1b1b;
+--accent:#00e676;
+--blue:#2979ff;
+--orange:#ff9100;
+--danger:#ff4444;
+--text:#ffffff;
+--muted:#aaaaaa;
+--gold:linear-gradient(45deg,gold,orange);
+}
 
-/* GRID */
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-@media(min-width:768px){.grid{grid-template-columns:repeat(4,1fr)}}
-@media(min-width:1024px){.grid{grid-template-columns:repeat(5,1fr)}}
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,Helvetica,sans-serif;
+}
 
-/* CARD */
-.card{background:#1c1c1c;border-radius:6px;overflow:hidden;display:flex;flex-direction:column}
+body{
+background:var(--bg);
+color:var(--text);
+padding:12px;
+}
 
-/* FULL IMAGE FIX */
-.thumb-wrapper{position:relative;background:#000}
+/* ================= NAV ================= */
+
+.nav{
+display:flex;
+gap:8px;
+flex-wrap:wrap;
+justify-content:center;
+margin-bottom:14px;
+}
+
+.nav button{
+padding:6px 14px;
+border:0;
+border-radius:6px;
+background:#2c2c2c;
+color:white;
+cursor:pointer;
+transition:0.2s;
+}
+
+.nav button.active{
+background:var(--accent);
+color:black;
+}
+
+/* ================= VIDEO ================= */
+
+video{
+width:100%;
+max-height:260px;
+background:black;
+border-radius:8px;
+margin-bottom:16px;
+}
+
+/* ================= GRID ================= */
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+gap:12px;
+}
+
+/* ================= CARD ================= */
+
+.card{
+background:var(--card);
+border-radius:10px;
+overflow:hidden;
+display:flex;
+flex-direction:column;
+transition:0.2s;
+}
+
+.card:hover{
+transform:translateY(-3px);
+}
+
+/* IMAGE FULL FIX */
+
+.thumb-wrapper{
+position:relative;
+background:black;
+}
+
 .card img{
 width:100%;
-height:180px;
-object-fit:contain;   /* SHOW FULL IMAGE */
-background:#000;
+height:190px;
+object-fit:contain;   /* FULL IMAGE */
+background:black;
 }
 
 /* PREMIUM BADGE */
+
 .premium-badge{
 position:absolute;
-top:8px;left:8px;
-background:linear-gradient(45deg,gold,orange);
-color:#000;font-size:11px;font-weight:bold;
-padding:4px 8px;border-radius:4px;
+top:8px;
+left:8px;
+background:var(--gold);
+color:black;
+font-weight:bold;
+font-size:11px;
+padding:4px 8px;
+border-radius:6px;
+animation:glow 2s infinite alternate;
 }
 
-/* ICONS ON POSTER */
+@keyframes glow{
+from{box-shadow:0 0 4px gold;}
+to{box-shadow:0 0 14px orange;}
+}
+
+/* POSTER ICONS */
+
 .poster-icons{
 position:absolute;
 top:8px;
@@ -51,59 +135,110 @@ right:8px;
 display:flex;
 gap:6px;
 }
+
 .poster-icons button{
-background:rgba(0,0,0,0.6);
+background:rgba(0,0,0,0.7);
 border:0;
-color:#fff;
-font-size:14px;
+color:white;
 padding:4px 6px;
-border-radius:4px;
+border-radius:5px;
 cursor:pointer;
 }
 
 /* INFO */
-.info{padding:8px;display:flex;flex-direction:column;flex:1}
-.info h3{font-size:13px;height:32px;overflow:hidden;margin-bottom:6px}
+
+.info{
+padding:8px;
+display:flex;
+flex-direction:column;
+flex:1;
+}
+
+.info h3{
+font-size:13px;
+height:32px;
+overflow:hidden;
+margin-bottom:6px;
+}
 
 /* BUTTONS */
-.btn{padding:6px;margin-top:6px;border:0;border-radius:4px;font-size:13px;cursor:pointer}
-.play{background:#00c853;color:#000}
-.bypass{background:#ff9100;color:#000}
-.openpage{background:#2979ff;color:#fff}
 
-/* SAVED SECTION */
-.saved-section{margin-top:20px}
-.saved-section h2{margin-bottom:8px}
+.btn{
+padding:6px;
+border:0;
+border-radius:6px;
+cursor:pointer;
+margin-top:6px;
+font-size:12px;
+}
+
+.play{background:var(--accent);color:black;}
+.openpage{background:var(--blue);color:white;}
+.redirect{background:var(--orange);color:black;}
+.remove{background:var(--danger);color:white;}
+
+/* SAVED */
+
+.saved-section{
+margin-top:25px;
+}
+
+.saved-section h2{
+margin-bottom:8px;
+}
+
 .saved-item{
 display:flex;
 align-items:center;
 gap:8px;
-background:#1a1a1a;
+background:#181818;
 padding:6px;
-border-radius:6px;
+border-radius:8px;
 margin-bottom:6px;
 }
+
 .saved-item img{
-width:50px;
-height:50px;
+width:55px;
+height:55px;
 object-fit:contain;
-background:#000;
+background:black;
+border-radius:6px;
 }
-.saved-item .title{
+
+.saved-title{
 flex:1;
 font-size:12px;
 overflow:hidden;
 }
-.saved-item button{
-padding:4px 6px;
-border:0;
-border-radius:4px;
-cursor:pointer;
-font-size:11px;
-}
-.remove{background:#ff4444;color:#fff}
 
-.loading,.error{text-align:center;padding:20px;color:#aaa}
+/* TOAST */
+
+.toast{
+position:fixed;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+background:#222;
+color:white;
+padding:8px 14px;
+border-radius:8px;
+opacity:0;
+transition:0.3s;
+z-index:999;
+}
+
+.toast.show{
+opacity:1;
+}
+
+/* LOADING */
+
+.loading{
+text-align:center;
+padding:30px;
+color:var(--muted);
+}
+
 </style>
 </head>
 <body>
@@ -116,6 +251,7 @@ font-size:11px;
 </div>
 
 <video id="player" controls></video>
+
 <div id="grid" class="grid"></div>
 
 <div class="saved-section">
@@ -123,218 +259,220 @@ font-size:11px;
 <div id="savedContainer"></div>
 </div>
 
+<div id="toast" class="toast"></div>
+
 <script>
 
-var PROXY="https://iterplay.httpsfree-tvsdjjnworkersdev.workers.dev/?url=";
-var SECRET_KEY="iTeraPl@y_V1d30_S3cur3_K3y_2025_!@#$";
-var LIMIT=20;
+/* ================= CONFIG ================= */
 
-var API={
+const PROXY="https://iterplay.httpsfree-tvsdjjnworkersdev.workers.dev/?url=";
+const SECRET_KEY="iTeraPl@y_V1d30_S3cur3_K3y_2025_!@#$";
+const LIMIT=20;
+
+const API={
 all:{url:"https://iteraplay.com/api/get-videos.php",mode:"plain"},
 recent:{url:"https://iteraplay.com/api/get-recent-videos.php",mode:"encrypted"},
 trending:{url:"https://iteraplay.com/api/get-trending-videos.php",mode:"encrypted"},
 viral:{url:"https://iteraplay.com/api/get-viral-videos.php",mode:"auto"}
 };
 
-var currentTab="trending";
-var offset=0;
-var videos=[];
+let currentTab="trending";
+let offset=0;
+let videos=[];
 
-document.addEventListener("DOMContentLoaded",function(){
+/* ================= INIT ================= */
+
+document.addEventListener("DOMContentLoaded",()=>{
 loadData();
 renderSaved();
 });
 
+/* ================= UTILS ================= */
+
+function toast(msg){
+const t=document.getElementById("toast");
+t.innerText=msg;
+t.classList.add("show");
+setTimeout(()=>t.classList.remove("show"),2000);
+}
+
+function safeStorage(key,value=null){
+if(value===null){
+return JSON.parse(localStorage.getItem(key)||"[]");
+}else{
+localStorage.setItem(key,JSON.stringify(value));
+}
+}
+
+/* ================= NAV ================= */
+
 function switchTab(tab,btn){
-currentTab=tab;offset=0;
+currentTab=tab;
+offset=0;
 document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
 btn.classList.add("active");
 loadData();
 }
 
+/* ================= FETCH ================= */
+
 function xorDecrypt(b64,key){
-var d=atob(b64),o="";
-for(var i=0;i<d.length;i++){
+let d=atob(b64),o="";
+for(let i=0;i<d.length;i++){
 o+=String.fromCharCode(d.charCodeAt(i)^key.charCodeAt(i%key.length));
 }
 return o;
 }
 
-function fetchPlain(url){
-return fetch(PROXY+url).then(r=>r.json()).then(j=>j.videos||[]);
-}
-
-function fetchEncrypted(url){
-return fetch(PROXY+url).then(r=>r.json()).then(j=>{
-var p=JSON.parse(xorDecrypt(j.data,SECRET_KEY));
-return p.videos||p||[];
-});
-}
-
-function fetchAuto(url){
-return fetch(PROXY+url).then(r=>r.json()).then(j=>{
-if(j.videos)return j.videos;
+function fetchData(url,mode){
+return fetch(PROXY+url)
+.then(r=>r.json())
+.then(j=>{
+if(mode==="plain") return j.videos||[];
 if(j.data){
-var p=JSON.parse(xorDecrypt(j.data,SECRET_KEY));
+let p=JSON.parse(xorDecrypt(j.data,SECRET_KEY));
 return p.videos||p||[];
 }
-return[];
+return j.videos||[];
 });
 }
 
-function normalize(v){
-return{
-id:v.id||v.video_id||null,
-title:v.title||v.display_name||v.file_name||"Untitled",
-thumbnail:v.thumbnail||"",
-is_premium:v.is_premium===false?false:true,
-video_url:v.video_url||"",
-custom_url:v.custom_url||"",
-terabox_url:v.terabox_url||v.external_url||"",
-date:v.upload_date||v.created_at||""
-};
-}
+/* ================= LOAD ================= */
 
 function loadData(){
-showLoading();
-var api=API[currentTab];
-var url=api.url+"?offset="+offset+"&limit="+LIMIT+"&reset_seed=true";
-var f=api.mode==="plain"?fetchPlain:api.mode==="encrypted"?fetchEncrypted:fetchAuto;
+document.getElementById("grid").innerHTML="<div class='loading'>Loading...</div>";
+let api=API[currentTab];
+let url=api.url+"?offset="+offset+"&limit="+LIMIT+"&reset_seed=true";
 
-f(url).then(raw=>{
-videos=[];
-raw.forEach(r=>videos.push(normalize(r)));
+fetchData(url,api.mode)
+.then(raw=>{
+videos=raw.map(v=>({
+id:v.id||v.video_id,
+title:v.title||v.file_name||"Untitled",
+thumbnail:v.thumbnail||"",
+is_premium:v.is_premium!==false,
+custom_url:v.custom_url||"",
+terabox_url:v.terabox_url||v.external_url||""
+}));
 render();
-}).catch(()=>showError("Failed to load"));
+})
+.catch(()=>document.getElementById("grid").innerHTML="<div class='loading'>Error Loading</div>");
 }
+
+/* ================= RENDER ================= */
 
 function render(){
-var g=document.getElementById("grid");
+let g=document.getElementById("grid");
 g.innerHTML="";
-if(!videos.length){showError("No videos found");return;}
 
 videos.forEach((v,i)=>{
-var c=document.createElement("div");
-c.className="card";
+let card=document.createElement("div");
+card.className="card";
 
-var h='<div class="thumb-wrapper">';
-h+='<img src="'+v.thumbnail+'">';
-
-if(v.is_premium){
-h+='<div class="premium-badge">PREMIUM</div>';
-}
-
-h+='<div class="poster-icons">';
-h+='<button onclick="copyLink('+i+')">📋</button>';
-h+='<button onclick="saveLink('+i+')">💾</button>';
-h+='</div></div>';
-
-h+='<div class="info"><h3>'+v.title+'</h3>';
+let html=`<div class="thumb-wrapper">
+<img src="${v.thumbnail}">
+${v.is_premium?'<div class="premium-badge">PREMIUM</div>':''}
+<div class="poster-icons">
+<button onclick="copyLink(${i})">📋</button>
+<button onclick="saveLink(${i})">💾</button>
+</div>
+</div>
+<div class="info">
+<h3>${v.title}</h3>`;
 
 if(v.is_premium){
-h+='<button class="btn openpage" onclick="openBypass('+i+')">Open Bypass Tera Page</button>';
-h+='<button class="btn bypass" onclick="redirectBypass('+i+')">Redirect For Bypass</button>';
+html+=`
+<button class="btn openpage" onclick="openBypass(${i})">Open Bypass Tera Page</button>
+<button class="btn redirect" onclick="redirectBypass(${i})">Redirect For Bypass</button>
+`;
 }else{
-h+='<button class="btn play" onclick="playFree(\''+v.custom_url+'\')">Play</button>';
+html+=`<button class="btn play" onclick="playFree('${v.custom_url}')">Play</button>`;
 }
 
-c.innerHTML=h+"</div>";
-g.appendChild(c);
+card.innerHTML=html+"</div>";
+g.appendChild(card);
 });
+}
+
+/* ================= ACTIONS ================= */
+
+function copyLink(i){
+let v=videos[i];
+let link=v.terabox_url||v.custom_url;
+if(!link)return toast("No link");
+navigator.clipboard.writeText(link);
+toast("Copied!");
+}
+
+function saveLink(i){
+let saved=safeStorage("savedLinks");
+let v=videos[i];
+
+if(saved.find(s=>s.id===v.id)){
+toast("Already Saved");
+return;
+}
+
+saved.push(v);
+safeStorage("savedLinks",saved);
+renderSaved();
+toast("Saved!");
+}
+
+function renderSaved(){
+let container=document.getElementById("savedContainer");
+container.innerHTML="";
+let saved=safeStorage("savedLinks");
+
+saved.forEach((s,index)=>{
+let div=document.createElement("div");
+div.className="saved-item";
+div.innerHTML=`
+<img src="${s.thumbnail}">
+<div class="saved-title">${s.title}</div>
+<button class="btn redirect" onclick="redirectSaved(${index})">Bypass</button>
+<button class="btn remove" onclick="removeSaved(${index})">X</button>
+`;
+container.appendChild(div);
+});
+}
+
+function removeSaved(index){
+let saved=safeStorage("savedLinks");
+saved.splice(index,1);
+safeStorage("savedLinks",saved);
+renderSaved();
+toast("Removed");
+}
+
+function redirectSaved(index){
+let saved=safeStorage("savedLinks");
+localStorage.setItem("sharedTeraboxUrl",saved[index].terabox_url);
+window.location.href="https://sdjjn.pages.dev/bypasstera.html";
+}
+
+function openBypass(i){
+window.open("https://sdjjn.pages.dev/bypasstera.html","_blank");
+}
+
+function redirectBypass(i){
+let v=videos[i];
+if(!v.terabox_url)return toast("No TeraBox link");
+localStorage.setItem("sharedTeraboxUrl",v.terabox_url);
+window.location.href="https://sdjjn.pages.dev/bypasstera.html";
 }
 
 function playFree(u){
 fetch("https://iteraplay.com/s/watch.php?url="+encodeURIComponent(u))
 .then(r=>r.text())
 .then(h=>{
-var m=h.match(/https:\/\/pub-[^'"]+\.mp4/);
+let m=h.match(/https:\/\/pub-[^'"]+\.mp4/);
 if(m){
-var p=document.getElementById("player");
-p.src=m[0];p.play();
+let p=document.getElementById("player");
+p.src=m[0];
+p.play();
 }
 });
-}
-
-function copyLink(i){
-var v=videos[i];
-var link=v.terabox_url||v.video_url||v.custom_url;
-if(!link)return alert("No link");
-navigator.clipboard.writeText(link);
-alert("Copied!");
-}
-
-function openBypass(i){
-var v=videos[i];
-if(!v.terabox_url)return alert("No TeraBox link");
-window.open("https://sdjjn.pages.dev/bypasstera.html","_blank");
-}
-
-function redirectBypass(i){
-var v=videos[i];
-if(!v.terabox_url)return alert("No TeraBox link");
-localStorage.setItem("sharedTeraboxUrl",v.terabox_url);
-window.location.href="https://sdjjn.pages.dev/bypasstera.html";
-}
-
-/* SAVE SYSTEM */
-
-function saveLink(i){
-var v=videos[i];
-var saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
-
-if(saved.find(s=>s.id===v.id)){
-alert("Already saved");return;
-}
-
-saved.push({
-id:v.id,
-title:v.title,
-thumbnail:v.thumbnail,
-terabox_url:v.terabox_url
-});
-
-localStorage.setItem("savedLinks",JSON.stringify(saved));
-renderSaved();
-alert("Saved!");
-}
-
-function renderSaved(){
-var container=document.getElementById("savedContainer");
-container.innerHTML="";
-var saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
-
-saved.forEach((s,index)=>{
-var div=document.createElement("div");
-div.className="saved-item";
-
-div.innerHTML=
-'<img src="'+s.thumbnail+'">'+
-'<div class="title">'+s.title+'</div>'+
-'<button class="bypass" onclick="openSavedBypass('+index+')">Bypass</button>'+
-'<button class="remove" onclick="removeSaved('+index+')">X</button>';
-
-container.appendChild(div);
-});
-}
-
-function openSavedBypass(index){
-var saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
-localStorage.setItem("sharedTeraboxUrl",saved[index].terabox_url);
-window.location.href="https://sdjjn.pages.dev/bypasstera.html";
-}
-
-function removeSaved(index){
-var saved=JSON.parse(localStorage.getItem("savedLinks")||"[]");
-saved.splice(index,1);
-localStorage.setItem("savedLinks",JSON.stringify(saved));
-renderSaved();
-}
-
-function showLoading(){
-document.getElementById("grid").innerHTML="<div class='loading'>Loading...</div>";
-}
-function showError(m){
-document.getElementById("grid").innerHTML="<div class='error'>"+m+"</div>";
 }
 
 </script>
