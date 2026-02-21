@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camraja – Final Layout Fix</title>
+
+<style>
+:root{
+  --bg:#000000;
+  --card:#020617;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --accent:#22c55e;
+  --accent2:#ffffff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui;
+  background:var(--bg);
+  color:var(--text);
+}
+header{
+  padding:14px;
+  position:sticky;
+  top:0;
+  background:#020617;
+  z-index:10;
+}
+header input{
+  width:100%;
+  padding:12px;
+  border-radius:8px;
+  border:none;
+  font-size:15px;
+}
+
+/* ===== LIST PAGE ===== */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:16px;
+  padding:16px;
+}
+.card{
+  background:var(--card);
+  border-radius:12px;
+  overflow:hidden;
+  cursor:pointer;
+}
+.thumb{
+  width:100%;
+  height:180px;
+  object-fit:cover;
+}
+.card .title{
+  padding:10px;
+  font-size:14px;
+}
+
+/* ===== PAGINATION ===== */
+.pagination{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  justify-content:center;
+  padding:16px;
+}
+.pagination button,
+.pagination input{
+  padding:8px 12px;
+  border-radius:6px;
+  border:none;
+  background:#1e293b;
+  color:#fff;
+}
+.pagination button.active{background:var(--accent2)}
+.pagination input{width:70px}
+
+/* ===== POST PAGE ===== */
+#postView{
+  display:none;
+  max-width:900px;
+  margin:auto;
+  padding:16px;
+}
+.back{
+  color:var(--accent2);
+  cursor:pointer;
+  margin-bottom:12px;
+}
+.post-thumb{
+  width:100%;
+  max-height:360px;
+  object-fit:cover;
+  border-radius:12px;
+}
+.post-meta{
+  font-size:13px;
+  color:var(--muted);
+  margin:6px 0 14px;
+}
+.stream-row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin:10px 0;
+  flex-wrap:wrap;
+}
+.stream-row a{
+  flex:1;
+  color:var(--muted);
+  font-size:13px;
+  word-break:break-all;
+}
+.play-btn{
+  background:var(--accent);
+  color:#022c22;
+  border:none;
+  padding:8px 14px;
+  border-radius:6px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+
+/* Player */
+.player-wrapper{
+  margin-top:14px;
+}
+.player-wrapper iframe{
+  width:100%;
+  height:400px;
+  border:none;
+  border-radius:12px;
+}
+
+/* Image gallery */
+.image-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:8px;
+  margin-top:16px;
+}
+.image-grid img{
+  width:100%;
+  height:auto;
+  object-fit:contain;
+  border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <input id="searchInput" placeholder="Search posts…">
+</header>
+
+<div id="listView">
+  <div id="posts" class="grid"></div>
+  <div id="pagination" class="pagination"></div>
+</div>
+
+<div id="postView">
+  <div class="back" onclick="backToList()">← Back</div>
+  <img id="postThumb" class="post-thumb">
+  <h2 id="postTitle"></h2>
+  <div id="postMeta" class="post-meta"></div>
+  <div id="postContent"></div>
+
+  <h3>Downloads / Streams</h3>
+  <div id="postStreams"></div>
+
+  <div id="postPlayer"></div>
+
+  <h3>Images</h3>
+  <div id="postImages" class="image-grid"></div>
+</div>
+
+<script>
+const API='https://camraja.com/wp-json/wp/v2/posts?_embed&per_page=10';
+const PROXY='https://allinone.ascalrack.workers.dev/?url=';
+
+let page=1, search='', totalPages=1;
+
+const decode=h=>h.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"');
+const clean=u=>u.split(/[?#]/)[0];
+
+/* ===== SOURCE NAME ===== */
+function sourceName(u){
+  if(/krakenfiles/i.test(u)) return 'KrakenFiles';
+  if(/mixdrop|mxdrop/i.test(u)) return 'MixDrop';
+  if(/luluvid/i.test(u)) return 'Lulu';
+  if(/voe\./i.test(u)) return 'VOE';
+  if(/streamtape/i.test(u)) return 'Streamtape';
+  return 'Stream';
+}
+
+/* ===== EMBED NORMALIZE ===== */
+function normalize(u){
+  let m;
+  if(m=u.match(/krakenfiles\.com\/view\/([^\/]+)/i)) return `https://krakenfiles.com/embed-video/${m[1]}`;
+  if(m=u.match(/mxdrop\.to\/f\/([^\/]+)/i)) return `https://mixdrop.co/e/${m[1]}`;
+  if(m=u.match(/mixdrop\.co\/e\/([^\/]+)/i)) return `https://mixdrop.co/e/${m[1]}`;
+  if(m=u.match(/luluvid\.com\/([a-z0-9]+)/i)) return `https://luluvid.com/embed/${m[1]}`;
+  if(m=u.match(/voe\.(sx|uno|cx)\/([a-z0-9]+)/i)) return `https://voe.sx/e/${m[2]}`;
+  if(m=u.match(/streamtape\.com\/e\/([^\/]+)/i)) return `https://streamtape.com/e/${m[1]}`;
+  return null;
+}
+
+/* ===== RESOLVE VIDEO ===== */
+async function resolveVideo(u){
+  const direct=normalize(u);
+  if(direct) return direct;
+  try{
+    const r=await fetch(PROXY+encodeURIComponent(u));
+    const t=decode(await r.text());
+    const m=t.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+    return m?clean(m[1]):null;
+  }catch{return null;}
+}
+
+/* ===== EXTRACT LINKS ===== */
+function extractStreams(html){
+  const urls=[...decode(html).matchAll(/https?:\/\/[^\s"'<>]+/gi)]
+    .map(m=>clean(m[0]))
+    .filter(u=>
+      !u.match(/\.(jpg|png|gif|webp)$/i) &&
+      !u.includes('imagetape.com')
+    );
+  return [...new Set(urls)];
+}
+
+function extractImages(html){
+  const doc=document.createElement('div');
+  doc.innerHTML=decode(html);
+  return [...doc.querySelectorAll('img')]
+    .map(i=>clean(i.src));
+}
+
+/* ===== LOAD POSTS ===== */
+async function loadPosts(){
+  posts.innerHTML='Loading…';
+  const r=await fetch(`${API}&page=${page}&search=${search}`);
+  totalPages=parseInt(r.headers.get('X-WP-TotalPages')||1);
+  const d=await r.json();
+  posts.innerHTML='';
+  d.forEach(p=>{
+    const img=p._embedded?.['wp:featuredmedia']?.[0]?.source_url||'';
+    const c=document.createElement('div');
+    c.className='card';
+    c.innerHTML=img
+      ? `<img class="thumb" src="${img}"><div class="title">${p.title.rendered}</div>`
+      : `<div class="title">${p.title.rendered}</div>`;
+    c.onclick=()=>openPost(p);
+    posts.appendChild(c);
+  });
+  renderPagination();
+}
+
+/* ===== PAGINATION ===== */
+function renderPagination(){
+  pagination.innerHTML='';
+  const add=(t,f,a)=>{const b=document.createElement('button');b.textContent=t;if(a)b.classList.add('active');b.onclick=f;pagination.appendChild(b);}
+  add('Prev',()=>page>1&&(page--,loadPosts()));
+  for(let i=Math.max(1,page-2);i<=Math.min(totalPages,page+2);i++) add(i,()=>{page=i;loadPosts();},i===page);
+  add('Next',()=>page<totalPages&&(page++,loadPosts()));
+  const i=document.createElement('input');i.type='number';i.min=1;i.max=totalPages;pagination.appendChild(i);
+  add('Go',()=>{const v=parseInt(i.value);if(v>=1&&v<=totalPages){page=v;loadPosts();}});
+}
+
+/* ===== OPEN POST ===== */
+function openPost(p){
+  listView.style.display='none';
+  postView.style.display='block';
+
+  postThumb.src=p._embedded?.['wp:featuredmedia']?.[0]?.source_url||'';
+  postTitle.innerHTML=p.title.rendered;
+
+  const date=new Date(p.date);
+  postMeta.textContent=`Posted on ${date.toDateString()} at ${date.toLocaleTimeString()}`;
+
+  const cleanText=document.createElement('div');
+  cleanText.innerHTML=decode(p.content.rendered);
+  cleanText.querySelectorAll('iframe,img,script').forEach(e=>e.remove());
+  postContent.innerHTML=cleanText.innerHTML;
+
+  postStreams.innerHTML='';
+  postPlayer.innerHTML='';
+  extractStreams(p.content.rendered).forEach(u=>{
+    const row=document.createElement('div');
+    row.className='stream-row';
+    row.innerHTML=`<a href="${u}" target="_blank">${u}</a>`;
+    const b=document.createElement('button');
+    b.className='play-btn';
+    b.textContent=`Play (${sourceName(u)})`;
+    b.onclick=async()=>{
+      b.textContent='Loading…';
+      const src=await resolveVideo(u);
+      b.textContent=`Play (${sourceName(u)})`;
+      postPlayer.innerHTML=src
+        ? `<div class="player-wrapper">
+             <iframe width="560" height="315" src="${src}" frameborder="0" allowfullscreen></iframe>
+           </div>`
+        : 'Failed';
+    };
+    row.appendChild(b);
+    postStreams.appendChild(row);
+  });
+
+  postImages.innerHTML='';
+  extractImages(p.content.rendered).forEach(src=>{
+    const img=document.createElement('img');
+    img.src=src;
+    postImages.appendChild(img);
+  });
+}
+
+/* ===== NAV ===== */
+function backToList(){
+  postView.style.display='none';
+  listView.style.display='block';
+}
+
+searchInput.oninput=e=>{search=e.target.value;page=1;loadPosts();};
+
+loadPosts();
+</script>
+
+</body>
+</html>
