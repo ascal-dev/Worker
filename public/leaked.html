@@ -1,1 +1,126 @@
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8" /> <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <title>WP JSON Fast Blog</title> <style> :root{ --bg:#f5f7fb;--card:#fff;--text:#111827;--muted:#6b7280;--primary:#2563eb; } *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto;background:var(--bg);color:var(--text)} header{position:sticky;top:0;z-index:10;background:#fff;padding:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)} header input{width:100%;padding:12px 16px;border-radius:999px;border:1px solid #e5e7eb;font-size:15px} main{max-width:900px;margin:auto;padding:14px} .card{display:flex;gap:14px;align-items:center;background:var(--card);border-radius:16px;padding:12px;margin-bottom:14px;cursor:pointer} .thumb{width:120px;height:80px;object-fit:cover;border-radius:12px;background:#eee;flex-shrink:0} .title{font-weight:600;font-size:15px;line-height:1.35} .meta{font-size:12px;color:var(--muted)} .pagination{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:20px 0} .pagination button,.pagination input{padding:8px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#fff} .pagination button.active{background:var(--primary);color:#fff} .single{background:var(--card);border-radius:20px;padding:16px} .single img{width:100%;border-radius:16px;margin-bottom:12px} .single h1{font-size:22px;margin:8px 0} .nav{display:flex;gap:8px;margin-bottom:10px} .nav button{padding:8px 14px;border-radius:999px;border:1px solid #e5e7eb;background:#fff} .video-link{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e5e7eb;border-radius:14px;margin:14px 0;cursor:pointer} .play{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center} video{width:100%;margin-top:12px;border-radius:14px} </style> </head> <body> <header><input id="search" placeholder="Search posts..."></header> <main id="posts"></main> <script> const API='https://www.soniyabedi.in/blog/wp-json/wp/v2/posts?_embed'; let page=1,totalPages=1,search=''; const posts=document.getElementById('posts'); window.onpopstate=route; function route(){ const q=new URLSearchParams(location.search); q.get('post')?loadSingle(q.get('post')):loadPosts(); } function getSchemaThumb(p){ return p.schema?.thumbnailUrl || ''; } /* ===== LOAD POSTS ===== */ async function loadPosts(){ posts.innerHTML='Loading…'; const r=await fetch(${API}&page=${page}&search=${search}); totalPages=parseInt(r.headers.get('X-WP-TotalPages')||1); const d=await r.json(); posts.innerHTML=''; d.forEach(p=>{ const img=getSchemaThumb(p) || p._embedded?.['wp:featuredmedia']?.[0]?.source_url || ''; const c=document.createElement('div'); c.className='card'; c.innerHTML=img ? <img class="thumb" src="${img}"><div><div class="title">${p.title.rendered}</div><div class="meta">${new Date(p.date).toLocaleString()}</div></div> : <div class="title">${p.title.rendered}</div>; c.onclick=()=>openPost(p.id); posts.appendChild(c); }); renderPagination(); } function renderPagination(){ let h='<div class="pagination">'; h+=<button onclick="changePage(${page-1})" ${page<=1?'disabled':''}>Prev</button>; for(let i=1;i<=totalPages;i++)h+=<button class="${i===page?'active':''}" onclick="changePage(${i})">${i}</button>; h+=<button onclick="changePage(${page+1})" ${page>=totalPages?'disabled':''}>Next</button>; h+=<input type="number" min="1" max="${totalPages}" placeholder="Page" onchange="changePage(this.value)">; posts.insertAdjacentHTML('beforeend',h+'</div>'); } function changePage(p){page=Number(p)||1;history.pushState({},'',?page=${page});loadPosts()} function openPost(id){history.pushState({},'',?post=${id});loadSingle(id)} /* ===== SINGLE POST ===== */ async function loadSingle(id){ const r=await fetch(${API}&include=${id}); const p=(await r.json())[0]; const img=getSchemaThumb(p) || p._embedded?.['wp:featuredmedia']?.[0]?.source_url || ''; // ONLY FIRST PARAGRAPH const match=p.content.rendered.match(/<p>[\s\S]*?<\/p>/i); const firstPara=match?match[0]:''; const mp4s=[...p.content.rendered.matchAll(/https?:\/\/[^\s"'<>]+\.mp4/gi)].map(m=>m[0]); posts.innerHTML= <div class="single"> <div class="nav"><button onclick="history.back()">Back</button></div> ${img?<img src="${img}">:''} <h1>${p.title.rendered}</h1> <div class="meta">${new Date(p.date).toLocaleString()}</div> <div>${firstPara}</div> ${mp4s.map((u,i)=> <div class="video-link" onclick="playVideo('${u}',${i})"><div class="play">▶</div><div>Viral Video ${i}</div></div> <div id="player-${i}"></div>).join('')} </div>; } function playVideo(url,i){ document.getElementById('player-'+i).innerHTML=<video controls autoplay src="${url}"></video>; } let t;document.getElementById('search').addEventListener('input',e=>{ clearTimeout(t); t=setTimeout(()=>{search=e.target.value;page=1;loadPosts()},300); }); route(); </script> </body> </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WP JSON Fast Blog</title>
+<style>
+:root{
+  --bg:#f5f7fb;--card:#fff;--text:#111827;--muted:#6b7280;--primary:#2563eb;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,Segoe UI,Roboto;background:var(--bg);color:var(--text)}
+header{position:sticky;top:0;z-index:10;background:#fff;padding:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+header input{width:100%;padding:12px 16px;border-radius:999px;border:1px solid #e5e7eb;font-size:15px}
+main{max-width:900px;margin:auto;padding:14px}
+
+.card{display:flex;gap:14px;align-items:center;background:var(--card);border-radius:16px;padding:12px;margin-bottom:14px;cursor:pointer}
+.thumb{width:120px;height:80px;object-fit:cover;border-radius:12px;background:#eee;flex-shrink:0}
+.title{font-weight:600;font-size:15px;line-height:1.35}
+.meta{font-size:12px;color:var(--muted)}
+
+.pagination{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:20px 0}
+.pagination button,.pagination input{padding:8px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#fff}
+.pagination button.active{background:var(--primary);color:#fff}
+
+.single{background:var(--card);border-radius:20px;padding:16px}
+.single img{width:100%;border-radius:16px;margin-bottom:12px}
+.single h1{font-size:22px;margin:8px 0}
+.nav{display:flex;gap:8px;margin-bottom:10px}
+.nav button{padding:8px 14px;border-radius:999px;border:1px solid #e5e7eb;background:#fff}
+
+.video-link{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e5e7eb;border-radius:14px;margin:14px 0;cursor:pointer}
+.play{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center}
+video{width:100%;margin-top:12px;border-radius:14px}
+</style>
+</head>
+<body>
+<header><input id="search" placeholder="Search posts..."></header>
+<main id="posts"></main>
+
+<script>
+const API='https://www.soniyabedi.in/blog/wp-json/wp/v2/posts?_embed';
+let page=1,totalPages=1,search='';
+const posts=document.getElementById('posts');
+
+window.onpopstate=route;
+
+function route(){
+  const q=new URLSearchParams(location.search);
+  q.get('post')?loadSingle(q.get('post')):loadPosts();
+}
+
+function getSchemaThumb(p){
+  return p.schema?.thumbnailUrl || '';
+}
+
+/* ===== LOAD POSTS ===== */
+async function loadPosts(){
+  posts.innerHTML='Loading…';
+  const r=await fetch(`${API}&page=${page}&search=${search}`);
+  totalPages=parseInt(r.headers.get('X-WP-TotalPages')||1);
+  const d=await r.json();
+  posts.innerHTML='';
+  d.forEach(p=>{
+    const img=getSchemaThumb(p) || p._embedded?.['wp:featuredmedia']?.[0]?.source_url || '';
+    const c=document.createElement('div');
+    c.className='card';
+    c.innerHTML=img
+      ? `<img class="thumb" src="${img}"><div><div class="title">${p.title.rendered}</div><div class="meta">${new Date(p.date).toLocaleString()}</div></div>`
+      : `<div class="title">${p.title.rendered}</div>`;
+    c.onclick=()=>openPost(p.id);
+    posts.appendChild(c);
+  });
+  renderPagination();
+}
+
+function renderPagination(){
+  let h='<div class="pagination">';
+  h+=`<button onclick="changePage(${page-1})" ${page<=1?'disabled':''}>Prev</button>`;
+  for(let i=1;i<=totalPages;i++)h+=`<button class="${i===page?'active':''}" onclick="changePage(${i})">${i}</button>`;
+  h+=`<button onclick="changePage(${page+1})" ${page>=totalPages?'disabled':''}>Next</button>`;
+  h+=`<input type="number" min="1" max="${totalPages}" placeholder="Page" onchange="changePage(this.value)">`;
+  posts.insertAdjacentHTML('beforeend',h+'</div>');
+}
+
+function changePage(p){page=Number(p)||1;history.pushState({},'',`?page=${page}`);loadPosts()}
+function openPost(id){history.pushState({},'',`?post=${id}`);loadSingle(id)}
+
+/* ===== SINGLE POST ===== */
+async function loadSingle(id){
+  const r=await fetch(`${API}&include=${id}`);
+  const p=(await r.json())[0];
+  const img=getSchemaThumb(p) || p._embedded?.['wp:featuredmedia']?.[0]?.source_url || '';
+
+  // ONLY FIRST PARAGRAPH
+  const match=p.content.rendered.match(/<p>[\s\S]*?<\/p>/i);
+  const firstPara=match?match[0]:'';
+
+  const mp4s=[...p.content.rendered.matchAll(/https?:\/\/[^\s"'<>]+\.mp4/gi)].map(m=>m[0]);
+
+  posts.innerHTML=`
+    <div class="single">
+      <div class="nav"><button onclick="history.back()">Back</button></div>
+      ${img?`<img src="${img}">`:''}
+      <h1>${p.title.rendered}</h1>
+      <div class="meta">${new Date(p.date).toLocaleString()}</div>
+      <div>${firstPara}</div>
+      ${mp4s.map((u,i)=>`
+        <div class="video-link" onclick="playVideo('${u}',${i})"><div class="play">▶</div><div>${u}</div></div>
+        <div id="player-${i}"></div>`).join('')}
+    </div>`;
+}
+
+function playVideo(url,i){
+  document.getElementById('player-'+i).innerHTML=`<video controls autoplay src="${url}"></video>`;
+}
+
+let t;document.getElementById('search').addEventListener('input',e=>{
+  clearTimeout(t);
+  t=setTimeout(()=>{search=e.target.value;page=1;loadPosts()},300);
+});
+
+route();
+</script>
+</body>
+</html>
