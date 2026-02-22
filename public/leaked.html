@@ -106,7 +106,7 @@ async function loadSingle(id){
       <div class="meta">${new Date(p.date).toLocaleString()}</div>
       <div>${firstPara}</div>
       ${mp4s.map((u,i)=>`
-        <div class="video-link" onclick="playVideo('${u}',${i})"><div class="play">▶</div><div>${u}</div></div>
+        <div class="video-link" onclick="playVideo('${u}',${i})"><div class="play">▶</div><div>Viral Video ${i}</div></div>
         <div id="player-${i}"></div>`).join('')}
     </div>`;
 }
