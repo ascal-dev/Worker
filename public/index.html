@@ -3361,12 +3361,14 @@
                 });
 
                 const videos = uniqueData.map(v => ({
-                    n: v.title || 'Untitled',
-                    l: v.img || '',
-                    g: 'ISS3' + (name ? ` • ${name}` : ''),
-                    u: v.stream_url || '',
-                    _isVideo: true
-                }));
+                n: v.title || 'Untitled',
+                l: v.img || '',
+                g: 'ISS3' + (name ? ` • ${name}` : ''),
+                u: v.stream_url
+                    ? `https://allinone.godess.workers.dev/?url=${encodeURIComponent(v.stream_url)}`
+                    : '',
+                _isVideo: true
+            }));
 
                 if (append) F = [...F, ...videos];
                 else { F = videos; pg = 1; }
@@ -3419,10 +3421,11 @@
                     n: v.title || 'Untitled',
                     l: v.img || '',
                     g: 'Desi Tales' + (name ? ` • ${name}` : ''),
-                    u: v.stream_url || '',
+                    u: v.stream_url
+                        ? `https://allinone.godess.workers.dev/?url=${encodeURIComponent(v.stream_url)}`
+                        : '',
                     _isVideo: true
                 }));
-
                 if (append) {
                     F = [...F, ...videos];
                 } else {
