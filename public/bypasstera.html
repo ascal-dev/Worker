@@ -446,6 +446,7 @@
     </div>
 
     <script>
+        const PROXY_BASE = "https://muladchanger.godess.workers.dev/?url=";
         const API_BASE = "https://gentle-meadow.godess.workers.dev/api/bypass";
         const COOKIE = "ndus=Y-OUYd8peHuiGOC6BwFGWwaAN0j3fA-VyxQESq4P; lang=en; browserid=Zhf22qdeuteuz+tWpiTrQdV/JjyNutxEtmE4Av+42pU; ndut_fmt=842101F5E19DC76BC1867AB1492B00FC220DEAC6067C47445C0B6E89F1BA798A; ndut_fmv=545aadbc1cff985716961ed542c24a5f0e9ef94747205489bee70deee226cf63f8c59a64e730986e5b5ddb76c419957d2a606ec1cf3180f2e662310eb8efe66e10b070631434b3d2d7a25201688c4512be71039e564c1d2c670bc1466a81bb08b6310a6b6ef9a2eb23086f91b7256750";
 
@@ -477,7 +478,7 @@
 
             try {
                 const endpoint = `${API_BASE}?url=${encodeURIComponent(url)}&cookie=${encodeURIComponent(COOKIE)}`;
-                const response = await fetch(endpoint);
+                const response = await fetch(PROXY_BASE + endpoint);
                 const data = await response.json();
 
                 // Artificial delay for "Cloudflare FEEL"
@@ -622,3 +623,4 @@
 
 
 </html>
+
