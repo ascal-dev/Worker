@@ -132,6 +132,7 @@
 
   <script>
     /* ================= CONFIG ================= */
+    const proxyBase = "https://allinone.godess.workers.dev/?url=";
     const CAT_API = "https://vdsblog.net/wp-json/wp/v2/categories?per_page=70";
     const POST_API = "https://vdsblog.net/wp-json/wp/v2/posts";
 
@@ -227,7 +228,7 @@
           const el = [...grid.children]
             .find(x => x.textContent === c.name)
             ?.querySelector("img");
-          if (el) el.src = img;
+          if (el) el.src = proxyBase + encodeURIComponent(img);;
 
           await tinyDelay();
         } catch (e) { }
@@ -377,3 +378,4 @@
 
 
 </html>
+
