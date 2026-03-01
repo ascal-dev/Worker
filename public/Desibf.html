@@ -113,6 +113,7 @@
 
   <script>
     /* ========= CONFIG ========= */
+    const proxyBase = "https://allinone.godess.workers.dev/?url=";
     const API = "https://desibf.com/wp-json/wp/v2";
     const API_LIMIT = 100;
     const CATEGORY_UI_LIMIT = 9;
@@ -195,7 +196,7 @@
           const imgEl = grid.querySelector(
             `.card[data-id="${c.id}"] img`
           );
-          if (imgEl) imgEl.src = PROXY + imgUrl;
+          if (imgEl) imgEl.src = proxyBase + encodeURIComponent(imgUrl);
 
         } catch (e) {
           console.warn("Category image failed:", c.id);
@@ -305,5 +306,6 @@
   </script>
 
 </body>
+
 
 </html>
