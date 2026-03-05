@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.7.11/dist/shaka-player.compiled.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/whatwg-fetch@3.6.2/dist/fetch.umd.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         :root {
             --bg: #09090b;
@@ -1782,6 +1782,12 @@
         </header>
 
         <main>
+              
+            <div id="grid"></div>
+            <div id="videoModal" style="display:none;">
+                <video id="player" controls style="width:100%;max-height:80vh;"></video>
+            </div>
+            
             <div class="player-box" id="playerBox">
                 <div class="player-wrap" id="playerWrap">
                     <button class="close-x" onclick="stopPlayer()">✕</button>
@@ -3523,18 +3529,6 @@
             }
         }
 
-                    <!-- HLS Player -->
-            <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-            
-            <div id="grid"></div>
-            
-            <!-- Video Modal -->
-            <div id="videoModal" style="display:none;">
-                <video id="player" controls style="width:100%;max-height:80vh;"></video>
-            </div>
-            
-            <script>
-            
             // ================= GLOBAL STATE =================
             
             let F = []; // Video list
