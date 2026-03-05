@@ -2404,7 +2404,7 @@
                     fetchFromSupabase('zmaal', 100000),            // Zmaal from Supabase
                     fetchFromSupabase('xmazza', 500),           // XMazaa from Supabase
                     fetchCategoriesFromSupabase('desi', 'categories'),  // Desi Tales categories
-                    fetchCategoriesFromSupabase('desitales', 'tags'),        // Desi Tales tags
+                    fetchCategoriesFromSupabase('desi', 'tags'),        // Desi Tales tags
                     fetchCategoriesFromSupabase('iss3', 'categories'),  // ISS3 categories
                     fetchCategoriesFromSupabase('iss3', 'tags'),         // ISS3 tags
                     fetchCategoriesFromSupabase('mastiraja', 'categories'),  // MastiRaja categories
@@ -4503,6 +4503,7 @@
                 const proxyTabs = ['video', 'm3u8', 'adultiptv', 'tv', 'korean'];
                 const fallbackProxyTabs = ['jiotv', 'sports'];
                 const isBabesChannel = c.n && c.n.toLowerCase().includes('babes');
+                let usedProxyForAttempt = url.startsWith('/api/proxy');
 
                 // For regular proxyTabs we still proxy immediately. Also force proxy if channel provides EXTHTTP cookie.
                 if (!useExactDbUrl && proxyTabs.includes(tab) && !isBabesChannel && url && !url.startsWith('/api/proxy')) {
@@ -4531,9 +4532,13 @@
                     usedProxyForAttempt = true;
                 }
 
-                // For JioTV/Sports: try direct first; fallback to proxy on failure
-                const allowFallbackProxy = !useExactDbUrl && fallbackProxyTabs.includes(tab) && !isBabesChannel && url;
-                let usedProxyForAttempt = url.startsWith('/api/proxy');
+                // Fallback policy:
+                // - JioTV/Sports: direct first, then proxy
+                // - MastiRaja: exact DB URL first, then proxy if blocked
+                const allowFallbackProxy = !!url && (
+                    (fallbackProxyTabs.includes(tab) && !isBabesChannel) ||
+                    useExactDbUrl
+                );
 
                 // Prefetch next video for instant playback
                 if (idx + 1 < F.length && F[idx + 1].u) {
@@ -4571,7 +4576,7 @@
                     // Use external CORS proxy for JioTV/Sports when configured, otherwise use internal proxyUrl helper
                     let proxiedOriginal;
                     if (useExactDbUrl) {
-                        proxiedOriginal = originalUrl;
+                        proxiedOriginal = proxyUrl(originalUrl);
                     } else if (fallbackProxyTabs.includes(tab)) {
                         try {
                             let target = originalUrl;
