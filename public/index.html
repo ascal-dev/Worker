@@ -3523,118 +3523,236 @@
             }
         }
 
-        // MastiRaja Logic
-        async function loadMastirajaVideos(type, id, name, page = 1, append = false) {
-            if (!append) document.getElementById('grid').innerHTML = '<div class="empty"><div class="spin"></div>Loading ' + name + '...</div>';
-            try {
-                const limit = 100;
-                const offset = (page - 1) * limit;
-
-                let query = supabaseClient.from('mastiraja_videos').select('*, mastiraja_categories(name)', { count: 'exact' });
-                if (type === 'category') {
-                    if (id === null) query = query.is('category_id', null);
-                    else query = query.eq('category_id', id);
+                    <!-- HLS Player -->
+            <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+            
+            <div id="grid"></div>
+            
+            <!-- Video Modal -->
+            <div id="videoModal" style="display:none;">
+                <video id="player" controls style="width:100%;max-height:80vh;"></video>
+            </div>
+            
+            <script>
+            
+            // ================= GLOBAL STATE =================
+            
+            let F = []; // Video list
+            let pg = 1;
+            let paginationState = {};
+            
+            // ================= PROXY HELPER =================
+            
+            function proxyUrl(url) {
+                if (!url) return '';
+                return `https://allinone.godess.workers.dev/?url=${encodeURIComponent(url)}`;
+            }
+            
+            // ================= VIDEO PLAYER =================
+            
+            function playVideo(url) {
+                const modal = document.getElementById("videoModal");
+                const video = document.getElementById("player");
+            
+                modal.style.display = "block";
+            
+                if (Hls.isSupported() && url.includes(".m3u8")) {
+                    const hls = new Hls();
+                    hls.loadSource(url);
+                    hls.attachMedia(video);
+                } 
+                else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                    video.src = url;
+                } 
+                else {
+                    video.src = url;
                 }
-
-                // For latest, we'll sort client-side by post_date and post_time
-                // For category, use created_at as fallback
-                query = query.range(offset, offset + limit - 1);
-                if (type === 'latest') {
-                    query = query.order('created_at', { ascending: false }); // Get recent first, then sort client-side
-                } else {
-                    query = query.order('created_at', { ascending: false });
+            
+                video.play();
+            }
+            
+            // ================= RENDER =================
+            
+            function render() {
+                const grid = document.getElementById("grid");
+            
+                if (!F.length) {
+                    grid.innerHTML = `<div class="empty">No videos found.</div>`;
+                    return;
                 }
-
-                const { data, count, error } = await query;
-                if (error) throw error;
-
-                // Sort by post_date and post_time if type is 'latest'
-                let sortedData = data || [];
-                if (type === 'latest') {
-                    sortedData = sortedData.sort((a, b) => {
-                        // Parse post_date (format: "DD MMM YYYY" like "15 Jan 2024") and post_time (format: "HH:MM:SS")
-                        const parseDate = (postDate, postTime) => {
-                            if (!postDate || !postTime) return new Date(0);
-                            try {
-                                // Format: "15 Jan 2024 14:30:00"
-                                // JavaScript Date can parse this format
-                                const dateStr = postDate + ' ' + postTime;
-                                const parsed = new Date(dateStr);
-                                // If parsing fails, return epoch
-                                return isNaN(parsed.getTime()) ? new Date(0) : parsed;
-                            } catch (e) {
-                                return new Date(0);
-                            }
-                        };
-                        const dateA = parseDate(a.post_date, a.post_time);
-                        const dateB = parseDate(b.post_date, b.post_time);
-                        return dateB - dateA; // Descending order (newest first)
-                    });
+            
+                grid.innerHTML = F.map(v => `
+                    <div class="card" onclick="playVideo('${v.u}')">
+                        <img src="${v.l}" loading="lazy" />
+                        <div class="title">${v.n}</div>
+                        <div class="cat">${v.g}</div>
+                    </div>
+                `).join('');
+            }
+            
+            // ================= LOAD VIDEOS =================
+            
+            async function loadMastirajaVideos(type, id, name, page = 1, append = false) {
+            
+                if (!append) {
+                    document.getElementById('grid').innerHTML =
+                        `<div class="empty"><div class="spin"></div>Loading ${name}...</div>`;
                 }
-
-                // Deduplicate by stream_url
-                const seen = new Set(append ? F.map(v => v.u) : []);
-                const uniqueData = [];
-                sortedData.forEach(v => {
-                    const url = v.stream_url || '';
-                    if (url && !seen.has(url)) {
-                        seen.add(url);
-                        uniqueData.push(v);
+            
+                try {
+                    const limit = 100;
+                    const offset = (page - 1) * limit;
+            
+                    let query = supabaseClient
+                        .from('mastiraja_videos')
+                        .select('*, mastiraja_categories(name)', { count: 'exact' });
+            
+                    if (type === 'category') {
+                        if (id === null) query = query.is('category_id', null);
+                        else query = query.eq('category_id', id);
                     }
-                });
-
-                const videos = uniqueData.map(v => ({
-                    id: v.id,
-                    n: v.title || 'Untitled',
-                    l: v.img || '',
-                    g: 'MastiRaja' + (v.mastiraja_categories && v.mastiraja_categories.name ? ` • ${v.mastiraja_categories.name}` : ''),
-                    u: v.stream_url || '',
-                    _isVideo: true,
-                    _isMastiRaja: true
-                }));
-
-                if (append) { F = [...F, ...videos]; }
-                else { F = videos; pg = 1; }
-                paginationState = { source: 'mastiraja_videos', type, id, name, page, total: count || 0 };
-                render();
-            } catch (e) {
-                console.error('MastiRaja error:', e);
-                if (!append) document.getElementById('grid').innerHTML = '<div class="empty">Failed to load MastiRaja videos.</div>';
+            
+                    query = query
+                        .range(offset, offset + limit - 1)
+                        .order('created_at', { ascending: false });
+            
+                    const { data, count, error } = await query;
+                    if (error) throw error;
+            
+                    let sortedData = data || [];
+            
+                    if (type === 'latest') {
+                        sortedData = sortedData.sort((a, b) => {
+                            const parseDate = (d, t) => {
+                                if (!d || !t) return new Date(0);
+                                const parsed = new Date(d + ' ' + t);
+                                return isNaN(parsed.getTime()) ? new Date(0) : parsed;
+                            };
+                            return parseDate(b.post_date, b.post_time) -
+                                   parseDate(a.post_date, a.post_time);
+                        });
+                    }
+            
+                    const seen = new Set(append ? F.map(v => v.u) : []);
+                    const uniqueData = [];
+            
+                    sortedData.forEach(v => {
+                        if (!v.stream_url) return;
+            
+                        const stream = proxyUrl(v.stream_url);
+                        if (!seen.has(stream)) {
+                            seen.add(stream);
+                            uniqueData.push(v);
+                        }
+                    });
+            
+                    const videos = uniqueData.map(v => ({
+                        id: v.id,
+                        n: v.title || 'Untitled',
+                        l: proxyUrl(v.img),
+                        g: 'MastiRaja' +
+                            (v.mastiraja_categories?.name
+                                ? ` • ${v.mastiraja_categories.name}`
+                                : ''),
+                        u: proxyUrl(v.stream_url),
+                        _isVideo: true,
+                        _isMastiRaja: true
+                    }));
+            
+                    if (append) F = [...F, ...videos];
+                    else {
+                        F = videos;
+                        pg = 1;
+                    }
+            
+                    paginationState = {
+                        source: 'mastiraja_videos',
+                        type,
+                        id,
+                        name,
+                        page,
+                        total: count || 0
+                    };
+            
+                    render();
+            
+                } catch (e) {
+                    console.error("Load error:", e);
+                    document.getElementById('grid').innerHTML =
+                        `<div class="empty">Failed to load videos.</div>`;
+                }
             }
-        }
-
-        async function searchMastirajaVideos(q, page = 1, append = false) {
-            if (!append) document.getElementById('grid').innerHTML = '<div class="empty"><div class="spin"></div>Searching MastiRaja...</div>';
-            try {
-                const limit = 100;
-                const offset = (page - 1) * limit;
-                const { data, count, error } = await supabaseClient
-                    .from('mastiraja_videos')
-                    .select('*, mastiraja_categories(name)', { count: 'exact' })
-                    .ilike('title', `%${q}%`)
-                    .range(offset, offset + limit - 1)
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-                const videos = (data || []).map(v => ({
-                    id: v.id,
-                    n: v.title || 'Untitled',
-                    l: v.img || '',
-                    g: 'MastiRaja Search' + (v.mastiraja_categories && v.mastiraja_categories.name ? ` • ${v.mastiraja_categories.name}` : ''),
-                    u: v.stream_url || '',
-                    _isVideo: true,
-                    _isMastiRaja: true
-                }));
-
-                if (append) F = [...F, ...videos];
-                else { F = videos; pg = 1; }
-                paginationState = { source: 'mastiraja_search', q, page, total: count || 0 };
-                render();
-            } catch (e) {
-                console.error('MastiRaja search error:', e);
-                if (!append) document.getElementById('grid').innerHTML = '<div class="empty">MastiRaja search failed.</div>';
+            
+            // ================= SEARCH =================
+            
+            async function searchMastirajaVideos(q, page = 1, append = false) {
+            
+                if (!append) {
+                    document.getElementById('grid').innerHTML =
+                        `<div class="empty"><div class="spin"></div>Searching...</div>`;
+                }
+            
+                try {
+                    const limit = 100;
+                    const offset = (page - 1) * limit;
+            
+                    const { data, count, error } = await supabaseClient
+                        .from('mastiraja_videos')
+                        .select('*, mastiraja_categories(name)', { count: 'exact' })
+                        .ilike('title', `%${q}%`)
+                        .range(offset, offset + limit - 1)
+                        .order('created_at', { ascending: false });
+            
+                    if (error) throw error;
+            
+                    const seen = new Set(append ? F.map(v => v.u) : []);
+                    const uniqueData = [];
+            
+                    (data || []).forEach(v => {
+                        if (!v.stream_url) return;
+            
+                        const stream = proxyUrl(v.stream_url);
+                        if (!seen.has(stream)) {
+                            seen.add(stream);
+                            uniqueData.push(v);
+                        }
+                    });
+            
+                    const videos = uniqueData.map(v => ({
+                        id: v.id,
+                        n: v.title || 'Untitled',
+                        l: proxyUrl(v.img),
+                        g: 'MastiRaja Search' +
+                            (v.mastiraja_categories?.name
+                                ? ` • ${v.mastiraja_categories.name}`
+                                : ''),
+                        u: proxyUrl(v.stream_url),
+                        _isVideo: true,
+                        _isMastiRaja: true
+                    }));
+            
+                    if (append) F = [...F, ...videos];
+                    else {
+                        F = videos;
+                        pg = 1;
+                    }
+            
+                    paginationState = {
+                        source: 'mastiraja_search',
+                        q,
+                        page,
+                        total: count || 0
+                    };
+            
+                    render();
+            
+                } catch (e) {
+                    console.error("Search error:", e);
+                    document.getElementById('grid').innerHTML =
+                        `<div class="empty">Search failed.</div>`;
+                }
             }
-        }
+
 
         // ===== JIO TV / SPORTS M3U PARSER WITH DRM SUPPORT =====
         function parseM3UWithDRM(txt) {
