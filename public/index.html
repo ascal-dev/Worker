@@ -4475,7 +4475,8 @@
                 resetControls();
 
                 // Check if it's a webpage site - load in fullscreen browser overlay
-                const isWebpage = !c.u.match(/\.(m3u8|mp4|ts|mkv|webm|mpd|m3u)($|\?)/i);
+                // Respect known video items even when URLs don't include a file extension.
+                const isWebpage = !(c._isVideo || c._isMastiRaja) && !c.u.match(/\.(m3u8|mp4|ts|mkv|webm|mpd|m3u)($|\?)/i);
 
                 if (isWebpage) {
                     const isBrowsingPage = (c.u.includes('xhamster') && !c.u.includes('/videos/')) ||
@@ -4498,12 +4499,13 @@
                 // Determine if proxy is needed based on tab
                 let url = c.u;
                 const originalUrl = c.u;
+                const useExactDbUrl = !!c._isMastiRaja;
                 const proxyTabs = ['video', 'm3u8', 'adultiptv', 'tv', 'korean'];
                 const fallbackProxyTabs = ['jiotv', 'sports'];
                 const isBabesChannel = c.n && c.n.toLowerCase().includes('babes');
 
                 // For regular proxyTabs we still proxy immediately. Also force proxy if channel provides EXTHTTP cookie.
-                if (proxyTabs.includes(tab) && !isBabesChannel && url && !url.startsWith('/api/proxy')) {
+                if (!useExactDbUrl && proxyTabs.includes(tab) && !isBabesChannel && url && !url.startsWith('/api/proxy')) {
                     // set global proxy UA/cookie so other helper calls pick it up
                     window.__proxyUA = c.ua || window.__proxyUA || '';
                     window.__proxyCookie = c.props?.exthttp?.cookie || window.__proxyCookie || '';
@@ -4511,7 +4513,7 @@
                 }
 
                 // If the channel includes an EXTHTTP cookie or a cookie query param, always start via proxy
-                if ((c.props?.exthttp?.cookie || (c.u && c.u.includes('cookie='))) && url && !url.startsWith('/api/proxy')) {
+                if (!useExactDbUrl && (c.props?.exthttp?.cookie || (c.u && c.u.includes('cookie='))) && url && !url.startsWith('/api/proxy')) {
                     window.__proxyUA = c.ua || window.__proxyUA || '';
                     window.__proxyCookie = c.props?.exthttp?.cookie || (c.u && (new URL(c.u).searchParams.get('cookie'))) || window.__proxyCookie || '';
                     if (fallbackProxyTabs.includes(tab)) {
@@ -4530,7 +4532,7 @@
                 }
 
                 // For JioTV/Sports: try direct first; fallback to proxy on failure
-                const allowFallbackProxy = fallbackProxyTabs.includes(tab) && !isBabesChannel && url;
+                const allowFallbackProxy = !useExactDbUrl && fallbackProxyTabs.includes(tab) && !isBabesChannel && url;
                 let usedProxyForAttempt = url.startsWith('/api/proxy');
 
                 // Prefetch next video for instant playback
@@ -4568,7 +4570,9 @@
                     const originalUrl = c.u;
                     // Use external CORS proxy for JioTV/Sports when configured, otherwise use internal proxyUrl helper
                     let proxiedOriginal;
-                    if (fallbackProxyTabs.includes(tab)) {
+                    if (useExactDbUrl) {
+                        proxiedOriginal = originalUrl;
+                    } else if (fallbackProxyTabs.includes(tab)) {
                         try {
                             let target = originalUrl;
                             if (c.ua) target += (originalUrl.includes('?') ? '&' : '?') + 'ua=' + encodeURIComponent(c.ua);
