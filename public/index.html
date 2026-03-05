@@ -1686,6 +1686,18 @@
                 padding: 8px;
             }
         }
+
+        /* MastiRaja dedicated layout */
+        body.mastiraja-layout #grid.grid {
+            grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        }
+
+        /* Android/mobile view */
+        @media (max-width: 900px) {
+            body.mastiraja-layout #grid.grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+        }
     </style>
 </head>
 
@@ -2376,6 +2388,7 @@
         function showApp() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('app').style.display = 'block';
+            updateTabLayoutMode();
             loadData();
         }
 
@@ -2537,7 +2550,7 @@
 
                 // Process MastiRaja categories
                 // MastiRaja dedicated proxy (images + streaming only)
-                const MASTIRAJA_PROXY = 'https://tv-4vo.pages.dev/api/proxy?extract=true&url=';
+                const MASTIRAJA_PROXY = 'https://allinone.godess.workers.dev/?url=';
                 const mastirajaProxy = (url) => {
                     if (!url) return '';
                     if (url.startsWith(MASTIRAJA_PROXY)) return url;
@@ -3015,11 +3028,16 @@
         }
 
         // Tabs
+        function updateTabLayoutMode() {
+            document.body.classList.toggle('mastiraja-layout', tab === 'MastiRaja');
+        }
+
         document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
             document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
             t.classList.add('active');
             tab = t.dataset.t;
             pg = 1;
+            updateTabLayoutMode();
 
             // Handle Sub-Menu Visibility
             const subMenu = document.getElementById('subMenu');
@@ -3582,9 +3600,10 @@
                 // Deduplicate by stream_url
                 const seen = new Set(append ? F.map(v => v.u) : []);
                 const uniqueData = [];
+                const isMp4Url = (u) => /\.mp4($|\?)/i.test(String(u || '').trim());
                 sortedData.forEach(v => {
                     const url = v.stream_url || '';
-                    if (url && !seen.has(url)) {
+                    if (isMp4Url(url) && !seen.has(url)) {
                         seen.add(url);
                         uniqueData.push(v);
                     }
@@ -3624,7 +3643,14 @@
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-                const videos = (data || []).map(v => ({
+                const seen = new Set(append ? F.map(v => v.u) : []);
+                const isMp4Url = (u) => /\.mp4($|\?)/i.test(String(u || '').trim());
+                const videos = (data || []).filter(v => {
+                    const url = v.stream_url || '';
+                    if (!isMp4Url(url) || seen.has(url)) return false;
+                    seen.add(url);
+                    return true;
+                }).map(v => ({
                     id: v.id,
                     n: v.title || 'Untitled',
                     l: v.img ? `https://allinone.godess.workers.dev/?url=${encodeURIComponent(v.img)}` : '',
@@ -4504,6 +4530,10 @@
                 const fallbackProxyTabs = ['jiotv', 'sports'];
                 const isBabesChannel = c.n && c.n.toLowerCase().includes('babes');
                 let usedProxyForAttempt = url.startsWith('/api/proxy');
+                let usedMastiDedicatedProxy = false;
+                const mastirajaProxyUrl = (raw) => raw
+                    ? `https://allinone.godess.workers.dev/?url=${encodeURIComponent(raw)}`
+                    : '';
 
                 // For regular proxyTabs we still proxy immediately. Also force proxy if channel provides EXTHTTP cookie.
                 if (!useExactDbUrl && proxyTabs.includes(tab) && !isBabesChannel && url && !url.startsWith('/api/proxy')) {
@@ -4576,7 +4606,7 @@
                     // Use external CORS proxy for JioTV/Sports when configured, otherwise use internal proxyUrl helper
                     let proxiedOriginal;
                     if (useExactDbUrl) {
-                        proxiedOriginal = proxyUrl(originalUrl);
+                        proxiedOriginal = mastirajaProxyUrl(originalUrl) || proxyUrl(originalUrl);
                     } else if (fallbackProxyTabs.includes(tab)) {
                         try {
                             let target = originalUrl;
@@ -4824,6 +4854,17 @@
                         // Error handler to fallback to proxy if allowed
                         vid.onerror = () => {
                             console.error('MP4 playback error for', url);
+                            // MastiRaja retry #1: dedicated proxy tuned for this source
+                            if (useExactDbUrl && !usedMastiDedicatedProxy) {
+                                usedMastiDedicatedProxy = true;
+                                const mastiProxy = mastirajaProxyUrl(originalUrl);
+                                if (mastiProxy) {
+                                    vid.src = mastiProxy;
+                                    vid.load();
+                                    vid.play().catch(() => { });
+                                    return;
+                                }
+                            }
                             if (allowFallbackProxy && !usedProxyForAttempt) {
                                 usedProxyForAttempt = true;
                                 // ensure globals available
