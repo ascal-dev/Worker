@@ -465,18 +465,18 @@
         }
 
         .player-video {
+            position: absolute;
+            inset: 0;
             width: 100%;
             height: 100%;
             display: block;
             background: #000;
+            object-fit: cover;
         }
 
         .player-overlay {
             position: absolute;
             inset: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
             pointer-events: none;
             opacity: 1;
             transition: opacity 0.2s ease;
@@ -484,6 +484,16 @@
 
         .player-overlay>* {
             pointer-events: auto;
+        }
+
+        .player-overlay>div:last-child {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
         }
 
         .player-overlay.is-hidden {
@@ -495,6 +505,10 @@
         }
 
         .player-status {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
             font-size: 12px;
             color: #e2e8f0;
             min-height: 18px;
@@ -525,7 +539,7 @@
             align-items: center;
             gap: 8px;
             padding: 0 10px 8px;
-            background: rgba(2, 6, 23, 0.82);
+            background: rgba(2, 6, 23, 0.72);
         }
 
         .player-progress {
@@ -622,6 +636,7 @@
         let extractRetryWithProxy = false;
         let extractReturnView = 'detail';
         let extractControlsHideTimer = null;
+        const EXTRACT_CONTROLS_AUTO_HIDE_MS = 3000;
 
         const state = {
             page: 1,
@@ -1000,10 +1015,11 @@
             const { video, overlay } = getExtractOverlayElements();
             if (!video || !overlay) return;
             clearExtractControlsHideTimer();
+            if (EXTRACT_CONTROLS_AUTO_HIDE_MS <= 0) return;
             if (video.paused || video.ended) return;
             extractControlsHideTimer = setTimeout(() => {
                 overlay.classList.add('is-hidden');
-            }, 3000);
+            }, EXTRACT_CONTROLS_AUTO_HIDE_MS);
         }
 
         function showExtractControls(autoHide = true) {
